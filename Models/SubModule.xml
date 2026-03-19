@@ -1,0 +1,22 @@
+<Module>
+  <Name value="Trade Restrictions Mod"/>
+  <Id value="TradeRestrictionsMod"/>
+  <Version value="v1.0.0"/>
+  <SingleplayerModule value="true"/>
+  <MultiplayerModule value="false"/>
+  <SubModules>
+    <SubModule>
+      <Name value="TradeRestrictionsMod"/>
+      <DLLName value="TradeRestrictionsMod.dll"/>
+      <SubModuleClassType value="TradeRestrictionsMod.SubModule"/>
+      <Assemblies/>
+    </SubModule>
+  </SubModules>
+  <DependedModules>
+    <DependedModule Id="Native"/>
+    <DependedModule Id="SandBoxCore"/>
+    <DependedModule Id="Sandbox"/>
+    <DependedModule Id="StoryMode" Optional="true"/>
+    <DependedModule Id="CustomBattle" Optional="true"/>
+  </DependedModules>
+</Module>

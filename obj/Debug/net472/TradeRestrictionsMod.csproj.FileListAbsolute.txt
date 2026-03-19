@@ -1,0 +1,11 @@
+C:\Users\Ibrahim\Documents\TradeRestrictionsMod\TradeRestrictionsMod\obj\Debug\net472\TradeRestrictionsMod.csproj.AssemblyReference.cache
+C:\Users\Ibrahim\Documents\TradeRestrictionsMod\TradeRestrictionsMod\obj\Debug\net472\TradeRestrictionsMod.GeneratedMSBuildEditorConfig.editorconfig
+C:\Users\Ibrahim\Documents\TradeRestrictionsMod\TradeRestrictionsMod\obj\Debug\net472\TradeRestrictionsMod.AssemblyInfoInputs.cache
+C:\Users\Ibrahim\Documents\TradeRestrictionsMod\TradeRestrictionsMod\obj\Debug\net472\TradeRestrictionsMod.AssemblyInfo.cs
+C:\Users\Ibrahim\Documents\TradeRestrictionsMod\TradeRestrictionsMod\obj\Debug\net472\TradeRestrictionsMod.csproj.CoreCompileInputs.cache
+C:\Users\Ibrahim\Documents\TradeRestrictionsMod\TradeRestrictionsMod\bin\Debug\net472\TradeRestrictionsMod.dll
+C:\Users\Ibrahim\Documents\TradeRestrictionsMod\TradeRestrictionsMod\bin\Debug\net472\TradeRestrictionsMod.pdb
+C:\Users\Ibrahim\Documents\TradeRestrictionsMod\TradeRestrictionsMod\bin\Debug\net472\0Harmony.dll
+C:\Users\Ibrahim\Documents\TradeRestrictionsMod\TradeRestrictionsMod\obj\Debug\net472\TradeRes.FE1EF96E.Up2Date
+C:\Users\Ibrahim\Documents\TradeRestrictionsMod\TradeRestrictionsMod\obj\Debug\net472\TradeRestrictionsMod.dll
+C:\Users\Ibrahim\Documents\TradeRestrictionsMod\TradeRestrictionsMod\obj\Debug\net472\TradeRestrictionsMod.pdb

@@ -1,0 +1,12 @@
+C:\Users\Ibrahim\Documents\TradeRestrictionsMod\TradeRestrictionsMod\bin\Debug\net10.0\TradeRestrictionsMod.deps.json
+C:\Users\Ibrahim\Documents\TradeRestrictionsMod\TradeRestrictionsMod\bin\Debug\net10.0\TradeRestrictionsMod.dll
+C:\Users\Ibrahim\Documents\TradeRestrictionsMod\TradeRestrictionsMod\bin\Debug\net10.0\TradeRestrictionsMod.pdb
+C:\Users\Ibrahim\Documents\TradeRestrictionsMod\TradeRestrictionsMod\obj\Debug\net10.0\TradeRestrictionsMod.csproj.AssemblyReference.cache
+C:\Users\Ibrahim\Documents\TradeRestrictionsMod\TradeRestrictionsMod\obj\Debug\net10.0\TradeRestrictionsMod.GeneratedMSBuildEditorConfig.editorconfig
+C:\Users\Ibrahim\Documents\TradeRestrictionsMod\TradeRestrictionsMod\obj\Debug\net10.0\TradeRestrictionsMod.AssemblyInfoInputs.cache
+C:\Users\Ibrahim\Documents\TradeRestrictionsMod\TradeRestrictionsMod\obj\Debug\net10.0\TradeRestrictionsMod.AssemblyInfo.cs
+C:\Users\Ibrahim\Documents\TradeRestrictionsMod\TradeRestrictionsMod\obj\Debug\net10.0\TradeRestrictionsMod.csproj.CoreCompileInputs.cache
+C:\Users\Ibrahim\Documents\TradeRestrictionsMod\TradeRestrictionsMod\obj\Debug\net10.0\TradeRestrictionsMod.dll
+C:\Users\Ibrahim\Documents\TradeRestrictionsMod\TradeRestrictionsMod\obj\Debug\net10.0\refint\TradeRestrictionsMod.dll
+C:\Users\Ibrahim\Documents\TradeRestrictionsMod\TradeRestrictionsMod\obj\Debug\net10.0\TradeRestrictionsMod.pdb
+C:\Users\Ibrahim\Documents\TradeRestrictionsMod\TradeRestrictionsMod\obj\Debug\net10.0\ref\TradeRestrictionsMod.dll

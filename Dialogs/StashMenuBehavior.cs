@@ -2,7 +2,6 @@ using TaleWorlds.CampaignSystem;
 using TaleWorlds.CampaignSystem.GameMenus;
 using TaleWorlds.CampaignSystem.Settlements;
 using TaleWorlds.Core;
-using TaleWorlds.Library;
 using TaleWorlds.Localization;
 using ArtOfTheTrade.Behaviors;
 
@@ -27,7 +26,7 @@ namespace ArtOfTheTrade.Dialogs
             // Add to town menu
             starter.AddGameMenuOption(
                 "town", "town_gold_stash",
-                "Manage gold stash",
+                "Manage stash",
                 TownStashCondition,
                 x => GameMenu.SwitchToMenu("gold_stash_menu"),
                 false, 5, false
@@ -36,7 +35,7 @@ namespace ArtOfTheTrade.Dialogs
             // Add to castle menu
             starter.AddGameMenuOption(
                 "castle", "castle_gold_stash",
-                "Manage gold stash",
+                "Manage stash",
                 CastleStashCondition,
                 x => GameMenu.SwitchToMenu("gold_stash_menu"),
                 false, 5, false
@@ -51,6 +50,7 @@ namespace ArtOfTheTrade.Dialogs
                 GameMenu.MenuFlags.None
             );
 
+            // Gold deposit
             starter.AddGameMenuOption(
                 "gold_stash_menu", "stash_deposit",
                 "Deposit gold",
@@ -59,6 +59,7 @@ namespace ArtOfTheTrade.Dialogs
                 false, 0, false
             );
 
+            // Gold withdraw
             starter.AddGameMenuOption(
                 "gold_stash_menu", "stash_withdraw",
                 "Withdraw gold",
@@ -67,6 +68,7 @@ namespace ArtOfTheTrade.Dialogs
                 false, 1, false
             );
 
+            // Leave
             starter.AddGameMenuOption(
                 "gold_stash_menu", "stash_leave",
                 "Leave",
@@ -75,7 +77,7 @@ namespace ArtOfTheTrade.Dialogs
                 true, 2, false
             );
 
-            // Deposit menu
+            // ---- Deposit gold sub-menu ----
             starter.AddGameMenu(
                 "gold_stash_deposit",
                 "{DEPOSIT_TEXT}",
@@ -104,11 +106,12 @@ namespace ArtOfTheTrade.Dialogs
                 x => { x.optionLeaveType = GameMenuOption.LeaveType.Leave; return true; },
                 x => GameMenu.SwitchToMenu("gold_stash_menu"), true, 4, false);
 
-            // Withdraw menu
+            // ---- Withdraw gold sub-menu ----
             starter.AddGameMenu(
                 "gold_stash_withdraw",
                 "{WITHDRAW_TEXT}",
-                x => {
+                x =>
+                {
                     var stash = StashBehavior.Current?.GetOrCreateStash(Settlement.CurrentSettlement);
                     MBTextManager.SetTextVariable("WITHDRAW_TEXT", $"Stash contains {stash?.StoredGold ?? 0} gold. How much to withdraw?");
                 },
@@ -130,7 +133,12 @@ namespace ArtOfTheTrade.Dialogs
 
             starter.AddGameMenuOption("gold_stash_withdraw", "withdraw_all", "Withdraw all gold",
                 x => { x.optionLeaveType = GameMenuOption.LeaveType.Continue; return (StashBehavior.Current?.GetOrCreateStash(Settlement.CurrentSettlement)?.StoredGold ?? 0) > 0; },
-                x => { var stash = StashBehavior.Current?.GetOrCreateStash(Settlement.CurrentSettlement); if (stash != null) { StashBehavior.Current?.WithdrawGold(Settlement.CurrentSettlement, stash.StoredGold); } GameMenu.SwitchToMenu("gold_stash_menu"); }, false, 3, false);
+                x =>
+                {
+                    var stash = StashBehavior.Current?.GetOrCreateStash(Settlement.CurrentSettlement);
+                    if (stash != null) StashBehavior.Current?.WithdrawGold(Settlement.CurrentSettlement, stash.StoredGold);
+                    GameMenu.SwitchToMenu("gold_stash_menu");
+                }, false, 3, false);
 
             starter.AddGameMenuOption("gold_stash_withdraw", "withdraw_back", "Back",
                 x => { x.optionLeaveType = GameMenuOption.LeaveType.Leave; return true; },
@@ -140,22 +148,24 @@ namespace ArtOfTheTrade.Dialogs
         private bool TownStashCondition(MenuCallbackArgs args)
         {
             args.optionLeaveType = GameMenuOption.LeaveType.Submenu;
-            return Settlement.CurrentSettlement != null && Settlement.CurrentSettlement.IsTown;
+            var settlement = Settlement.CurrentSettlement;
+            return settlement != null && StashBehavior.Current?.CanPlayerStashAt(settlement) == true;
         }
 
         private bool CastleStashCondition(MenuCallbackArgs args)
         {
             args.optionLeaveType = GameMenuOption.LeaveType.Submenu;
-            return Settlement.CurrentSettlement != null && Settlement.CurrentSettlement.IsCastle;
+            var settlement = Settlement.CurrentSettlement;
+            return settlement != null && StashBehavior.Current?.CanPlayerStashAt(settlement) == true;
         }
 
         private void StashMenuInit(MenuCallbackArgs args)
         {
             var settlement = Settlement.CurrentSettlement;
             var stash = StashBehavior.Current?.GetOrCreateStash(settlement);
+            int gold = stash?.StoredGold ?? 0;
             MBTextManager.SetTextVariable("STASH_STATUS",
-                $"Your stash at {settlement?.Name} contains {stash?.StoredGold ?? 0} gold.");
+                $"Your stash at {settlement?.Name}: {gold} gold stored.");
         }
     }
 }
-

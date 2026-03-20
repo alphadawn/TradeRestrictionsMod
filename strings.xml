@@ -1,0 +1,350 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+    Art of the Trade — String Reference
+    =====================================
+    This file contains all player-facing strings in the mod.
+    To change wording, edit the "text" attribute of each entry.
+
+    NOTE: This file is currently a reference only. To make these strings
+    fully localizable in-game, the dialog code would need to be updated
+    to reference these IDs using the {=str_id} syntax in AddPlayerLine/AddDialogLine.
+    Dynamic parts (town names, prices, item names) are marked with {PLACEHOLDER}.
+-->
+
+<strings>
+
+    <!-- ============================================================ -->
+    <!--  TRADE RESTRICTIONS (TradePatch.cs)                          -->
+    <!-- ============================================================ -->
+
+    <string id="str_aot_no_trade_access_warning"
+            text="No trade deal or certificate for {SETTLEMENT_NAME}. Buy prices are 5x, sell prices halved." />
+
+
+    <!-- ============================================================ -->
+    <!--  CERTIFICATES — Shared                                       -->
+    <!-- ============================================================ -->
+
+    <string id="str_aot_cert_already_valid"
+            text="You already have a valid certificate for {TOWN_NAME}." />
+
+    <string id="str_aot_cert_not_enough_gold"
+            text="You need {PRICE} gold for a certificate here." />
+
+    <string id="str_aot_cert_purchased_3day"
+            text="Certificate purchased for {TOWN_NAME}. Valid for 3 days." />
+
+    <string id="str_aot_cert_purchased_week"
+            text="Certificate purchased for {TOWN_NAME}. Valid for 1 week." />
+
+    <string id="str_aot_cert_purchased_6month"
+            text="Certificate purchased for {TOWN_NAME}. Valid for 6 months." />
+
+    <string id="str_aot_cert_purchased_1year"
+            text="Certificate purchased for {TOWN_NAME}. Valid for 1 year." />
+
+
+    <!-- ============================================================ -->
+    <!--  CERTIFICATE — PATH 1: Ruling Clan (1 year)                  -->
+    <!-- ============================================================ -->
+
+    <!-- Player line -->
+    <string id="str_aot_clan_cert_ask_player"
+            text="I'd like to purchase a trade certificate for this town." />
+
+    <!-- NPC responses by prosperity -->
+    <string id="str_aot_clan_cert_response_high"
+            text="Business is running smooth in {TOWN_NAME} — we do not really need new traders here. But if you insist, a year's certificate will cost you {PRICE} gold." />
+
+    <string id="str_aot_clan_cert_response_normal"
+            text="Trade in {TOWN_NAME} is steady. A full year's trading certificate will set you back {PRICE} gold. Interested?" />
+
+    <string id="str_aot_clan_cert_response_low"
+            text="Between you and me, {TOWN_NAME} has seen better days. We welcome new blood — a full year's certificate for just {PRICE} gold." />
+
+    <!-- Confirm lines -->
+    <string id="str_aot_clan_cert_yes_player"
+            text="Yes, I'll take it." />
+
+    <string id="str_aot_clan_cert_no_player"
+            text="Too expensive. Perhaps another time." />
+
+    <string id="str_aot_clan_cert_bought_npc"
+            text="Excellent. One year of free trade. Safe travels." />
+
+
+    <!-- ============================================================ -->
+    <!--  CERTIFICATE — PATH 2: Merchant Notable (6 months)           -->
+    <!-- ============================================================ -->
+
+    <!-- Player line -->
+    <string id="str_aot_merchant_cert_ask_player"
+            text="I'd like to lease a trade permit for this town." />
+
+    <!-- NPC responses by prosperity -->
+    <string id="str_aot_merchant_cert_response_high"
+            text="The markets here are thriving and we have no shortage of merchants. Securing a 6-month permit for {TOWN_NAME} will not be cheap — {PRICE} gold." />
+
+    <string id="str_aot_merchant_cert_response_normal"
+            text="Business here in {TOWN_NAME} is fair — nothing special. A 6-month trading permit will cost you {PRICE} gold." />
+
+    <string id="str_aot_merchant_cert_response_low"
+            text="Honestly, {TOWN_NAME} could use more goods coming through. I will get you a 6-month permit for {PRICE} gold — help bring some life back to these stalls." />
+
+    <!-- Confirm lines -->
+    <string id="str_aot_merchant_cert_yes_player"
+            text="Alright, I'll take it." />
+
+    <string id="str_aot_merchant_cert_no_player"
+            text="That's too much. I'll look elsewhere." />
+
+    <string id="str_aot_merchant_cert_bought_npc"
+            text="Here you go. Six months only — come back if you need it renewed." />
+
+
+    <!-- ============================================================ -->
+    <!--  CERTIFICATE — PATH 3: Trader 3-day Pass                     -->
+    <!-- ============================================================ -->
+
+    <!-- Player line -->
+    <string id="str_aot_trader_pass_ask_player"
+            text="Can you arrange a short-term trade pass for this town?" />
+
+    <!-- NPC responses by prosperity -->
+    <string id="str_aot_trader_pass_response_high"
+            text="Things are booming here in {TOWN_NAME}. A 3-day pass will not be cheap — {PRICE} gold, take it or leave it." />
+
+    <string id="str_aot_trader_pass_response_normal"
+            text="I can put in a word for you — three days of access in {TOWN_NAME} for {PRICE} gold. The usual arrangement." />
+
+    <string id="str_aot_trader_pass_response_low"
+            text="Things are quiet in {TOWN_NAME} right now. I will get you a 3-day pass for {PRICE} gold — help bring some business around here." />
+
+    <!-- Confirm lines -->
+    <string id="str_aot_trader_pass_yes_player"
+            text="Alright, let's do it." />
+
+    <string id="str_aot_trader_pass_no_player"
+            text="Too much for three days. Maybe later." />
+
+    <string id="str_aot_trader_pass_bought_npc"
+            text="Good. Three days — spend them wisely." />
+
+
+    <!-- ============================================================ -->
+    <!--  CERTIFICATE — PATH 4: Gang Leader / Bandit                  -->
+    <!-- ============================================================ -->
+
+    <!-- Player line -->
+    <string id="str_aot_bandit_cert_ask_player"
+            text="I need access to the markets here. Word is you can help with that..." />
+
+    <!-- NPC opening -->
+    <string id="str_aot_bandit_cert_response_npc"
+            text="Heh... sharp eyes. Maybe I can. Depends how persuasive you are. What are you offering?" />
+
+    <!-- Player options -->
+    <string id="str_aot_bandit_cert_smooth_player"
+            text="[Smooth] A small bribe and a friendly word. 3-day pass, half price. ({CHANCE}% chance)" />
+
+    <string id="str_aot_bandit_cert_bold_player"
+            text="[Bold] Press harder for a 7-day pass, half price. ({CHANCE}% chance, Charm/Roguery 60+)" />
+
+    <string id="str_aot_bandit_cert_cancel_player"
+            text="Never mind. I'll find another way." />
+
+    <!-- Outcomes -->
+    <string id="str_aot_bandit_cert_success_npc"
+            text="Ha. You have a silver tongue, I will give you that. Consider it done — but do not push your luck." />
+
+    <string id="str_aot_bandit_cert_fail_npc"
+            text="Nice try. But words are cheap. Come back with something more convincing — or more coin." />
+
+
+    <!-- ============================================================ -->
+    <!--  HAGGLE SYSTEM                                               -->
+    <!-- ============================================================ -->
+
+    <!-- Entry lines -->
+    <string id="str_aot_haggle_start_player"
+            text="I would like to discuss your prices..." />
+
+    <string id="str_aot_haggle_start_village_player"
+            text="I would like to work out a good deal with your village..." />
+
+    <!-- NPC opening -->
+    <string id="str_aot_haggle_response_npc"
+            text="Hmm... Let us see what we can work out. What did you have in mind?" />
+
+    <!-- Tier options (chance and rep filled dynamically) -->
+    <string id="str_aot_haggle_safe_player"
+            text="[Safe] A modest request, small discount, low risk. ({CHANCE}% chance{REP_TAG})" />
+
+    <string id="str_aot_haggle_moderate_player"
+            text="[Moderate] Push a bit harder. ({CHANCE}% chance, Trade 50+)" />
+
+    <string id="str_aot_haggle_bold_player"
+            text="[Bold] Go for the big discount. ({CHANCE}% chance, Trade 100+)" />
+
+    <string id="str_aot_haggle_cancel_player"
+            text="Never mind, forget I asked." />
+
+    <!-- Counter-offer (percentage filled dynamically) -->
+    <string id="str_aot_haggle_counter_npc"
+            text="Hmm, I cannot go that far. But I could manage {PCT}% off — take it or leave it." />
+
+    <!-- Counter-offer responses -->
+    <string id="str_aot_haggle_counter_accept_player"
+            text="Fair enough, I will take it." />
+
+    <string id="str_aot_haggle_counter_push_player"
+            text="Come now, surely you can do better than that." />
+
+    <string id="str_aot_haggle_counter_walk_player"
+            text="No deal. I will shop elsewhere." />
+
+    <string id="str_aot_haggle_walkaway_npc"
+            text="As you wish. Come back when you are willing to pay a fair price." />
+
+    <!-- Final outcomes -->
+    <string id="str_aot_haggle_success_npc"
+            text="Very well, you drive a hard bargain. I will give you better prices today." />
+
+    <string id="str_aot_haggle_failure_npc"
+            text="Ha! You think I am a fool? My prices stand — and I am adding a nuisance fee." />
+
+    <!-- InformationManager messages -->
+    <string id="str_aot_haggle_success_msg"
+            text="Haggle succeeded! Buy -{PCT}% / Sell +{PCT}%. (Rep: {REP}/50)" />
+
+    <string id="str_aot_haggle_failure_msg"
+            text="Haggle failed! Prices penalized for 3 days. (Rep: {REP}/50)" />
+
+    <string id="str_aot_haggle_counter_accepted_msg"
+            text="Counter accepted. Buy -{PCT}% / Sell +{PCT}%." />
+
+    <string id="str_aot_haggle_push_win_msg"
+            text="You pushed hard and won the full deal! Buy -{PCT}% / Sell +{PCT}%." />
+
+    <string id="str_aot_haggle_collapse_msg"
+            text="The deal collapsed! Locked out for 7 days. (Rep: {REP}/50)" />
+
+
+    <!-- ============================================================ -->
+    <!--  VILLAGE TRADE                                               -->
+    <!-- ============================================================ -->
+
+    <string id="str_aot_village_trade_player"
+            text="I would like to trade with the village." />
+
+
+    <!-- ============================================================ -->
+    <!--  CARAVAN HANDS                                               -->
+    <!-- ============================================================ -->
+
+    <!-- Entry lines -->
+    <string id="str_aot_caravan_hire_entry_player"
+            text="I am looking to hire some pack animal handlers." />
+
+    <string id="str_aot_caravan_manage_entry_player"
+            text="Let me check on my caravan hands." />
+
+    <!-- NPC opening -->
+    <string id="str_aot_caravan_hire_intro_npc"
+            text="I have fine animals available. What are you after?" />
+
+    <!-- Hire options (price and capacity filled dynamically) -->
+    <string id="str_aot_caravan_hire_sumpter_player"
+            text="A sumpter horse handler. ({PRICE} gold, +{CAPACITY} capacity, {UPKEEP} gold/day)" />
+
+    <string id="str_aot_caravan_hire_mule_player"
+            text="A mule handler. ({PRICE} gold, +{CAPACITY} capacity, {UPKEEP} gold/day)" />
+
+    <string id="str_aot_caravan_hire_camel_player"
+            text="A camel handler. ({PRICE} gold, +{CAPACITY} capacity, {UPKEEP} gold/day)" />
+
+    <string id="str_aot_caravan_hire_cancel_player"
+            text="Never mind." />
+
+    <string id="str_aot_caravan_hired_npc"
+            text="Consider it done. They will follow your caravan." />
+
+    <!-- Manage / status (filled dynamically) -->
+    <string id="str_aot_caravan_status_npc"
+            text="You have {COUNT} handler(s): {ROSTER}. Upkeep: {UPKEEP} gold/day. Capacity bonus: +{CAPACITY}. Slot limit: {CURRENT}/{MAX} (party size {PARTY}/50). Who would you like to release?" />
+
+    <!-- Dismiss options -->
+    <string id="str_aot_caravan_dismiss_sumpter_player"
+            text="Release a sumpter horse handler." />
+
+    <string id="str_aot_caravan_dismiss_mule_player"
+            text="Release a mule handler." />
+
+    <string id="str_aot_caravan_dismiss_camel_player"
+            text="Release a camel handler." />
+
+    <string id="str_aot_caravan_manage_done_player"
+            text="That will be all." />
+
+    <string id="str_aot_caravan_dismissed_npc"
+            text="Understood. Paid and sent on their way." />
+
+    <!-- InformationManager messages -->
+    <string id="str_aot_caravan_hired_msg"
+            text="Hired a {ANIMAL} handler. (+{CAPACITY} carry capacity, {UPKEEP} gold/day)" />
+
+    <string id="str_aot_caravan_dismissed_msg"
+            text="Dismissed the {ANIMAL} handler." />
+
+    <string id="str_aot_caravan_upkeep_fail_msg"
+            text="You could not afford upkeep — your {ANIMAL} handler has left." />
+
+    <string id="str_aot_caravan_party_too_small_msg"
+            text="You need at least 10 party members before you can manage caravan hands." />
+
+    <string id="str_aot_caravan_cap_reached_msg"
+            text="Your party can only manage {MAX} caravan hands right now. Grow your party to hire more." />
+
+    <string id="str_aot_caravan_max_5_msg"
+            text="You cannot have more than 5 caravan hands." />
+
+    <string id="str_aot_caravan_spawned_msg"
+            text="Your caravan is with you. ({COUNT} handler(s))" />
+
+
+    <!-- ============================================================ -->
+    <!--  MARKET INTELLIGENCE                                         -->
+    <!-- ============================================================ -->
+
+    <!-- Entry -->
+    <string id="str_aot_intel_ask_player"
+            text="What are merchants talking about lately?" />
+
+    <!-- NPC responses -->
+    <string id="str_aot_intel_cooldown_npc"
+            text="Nothing new since we last spoke. Give it a day or two and I may have something worth your coin." />
+
+    <string id="str_aot_intel_offer_npc"
+            text="Travelers talk... for {PRICE} gold I can tell you what I have heard about the markets nearby. Interested?" />
+
+    <!-- Player confirm -->
+    <string id="str_aot_intel_buy_yes_player"
+            text="Here, {PRICE} gold. What have you heard?" />
+
+    <string id="str_aot_intel_buy_no_player"
+            text="Not today." />
+
+    <!-- Tip texts by premium level -->
+    <string id="str_aot_intel_tip_urgent"
+            text="A trader came in just yesterday half-panicked — said {ITEM} is nearly impossible to find in {TOWN}. Someone is paying {PCT}% above the usual rate. If you can get some there, you will do very well." />
+
+    <string id="str_aot_intel_tip_notable"
+            text="Word from a merchant passing through — {ITEM} is fetching about {PCT}% above the going rate in {TOWN}. Demand has been strong. Worth a look if you have any to spare." />
+
+    <string id="str_aot_intel_tip_mild"
+            text="Nothing dramatic, but {ITEM} has been selling a little high in {TOWN} lately — around {PCT}% above normal. Might be worth stopping by." />
+
+    <string id="str_aot_intel_tip_nothing"
+            text="Honestly, it has been quiet out there. No unusual prices that I have heard of. Sorry — keep the coin." />
+
+</strings>

@@ -46,6 +46,10 @@ namespace ArtOfTheTrade
                 campaignStarter.AddBehavior(new HaggleBehavior());
                 campaignStarter.AddBehavior(certDialog);
                 campaignStarter.AddBehavior(new StashMenuBehavior());
+                campaignStarter.AddBehavior(new CaravanHandBehavior());
+                campaignStarter.AddBehavior(new CaravanHandDialogBehavior());
+                campaignStarter.AddBehavior(new MarketIntelDialogBehavior());
+                campaignStarter.AddBehavior(new RansomDialogBehavior());
             }
         }
     }

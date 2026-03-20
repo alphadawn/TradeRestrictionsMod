@@ -5,6 +5,8 @@ using TaleWorlds.Core;
 using TaleWorlds.Library;
 using TaleWorlds.MountAndBlade;
 using TaleWorlds.ObjectSystem;
+using ArtOfTheTrade.Behaviors;
+using ArtOfTheTrade.Models;
 
 namespace ArtOfTheTrade.Missions
 {
@@ -17,133 +19,148 @@ namespace ArtOfTheTrade.Missions
         public override void AfterStart()
         {
             base.AfterStart();
-            SpawnPackAnimal();
+            SpawnCaravanHands();
         }
 
-        private void SpawnPackAnimal()
+        // Each outfit set: head, body, leg, cape (null = none)
+        private static readonly string[][] Outfits = new[]
+        {
+            new[] { "turban",              "long_woolen_tunic", "khuzait_curved_boots", "southern_shawl" },
+            new[] { "tuareg",              "layered_robe",       "folded_town_boots",   null              },
+            new[] { "aserai_civil_hscarf_a","aserai_civil_b",   "steppe_leather_boots", null             },
+        };
+
+        // Spawn offsets relative to player: right, behind-right, behind-left, far-right, far-left
+        private static Vec3 GetSpawnOffset(int index, MatrixFrame frame)
+        {
+            return index switch
+            {
+                0 => frame.rotation.s * 3.5f,
+                1 => frame.rotation.f * -2f + frame.rotation.s * 1.5f,
+                2 => frame.rotation.f * -2f + frame.rotation.s * -1.5f,
+                3 => frame.rotation.f * -4f + frame.rotation.s * 3f,
+                4 => frame.rotation.f * -4f + frame.rotation.s * -3f,
+                _ => frame.rotation.s * 3.5f
+            };
+        }
+
+        private void SpawnCaravanHands()
         {
             try
             {
                 if (_spawned) return;
                 _spawned = true;
 
-                // Don't spawn in tavern, keep, or arena
                 string sceneName = Mission.Current?.SceneName ?? "";
-                if (sceneName.IndexOf("tavern", System.StringComparison.OrdinalIgnoreCase) >= 0 ||
+                if (sceneName.IndexOf("tavern",    System.StringComparison.OrdinalIgnoreCase) >= 0 ||
                     sceneName.IndexOf("lordshall", System.StringComparison.OrdinalIgnoreCase) >= 0 ||
-                    sceneName.IndexOf("arena", System.StringComparison.OrdinalIgnoreCase) >= 0)
+                    sceneName.IndexOf("arena",     System.StringComparison.OrdinalIgnoreCase) >= 0)
                     return;
 
                 var player = Agent.Main;
                 if (player == null) return;
 
-                var playerFrame = player.Frame;
+                var b = CaravanHandBehavior.Current;
+                if (b == null || b.TotalHands == 0) return;
 
-                // NPC 1 - Turban + Shawl + Long Woolen Tunic + Curved Boots, on camel (right side)
-                SpawnFollowerWithMount(
-                    player,
-                    playerFrame.origin + playerFrame.rotation.s * 3.5f,
-                    playerFrame.rotation.f.AsVec2,
-                    "townsman_aserai", "camel", "camel_saddle_a",
-                    "turban", "long_woolen_tunic", "khuzait_curved_boots", "southern_shawl"
-                );
-
-                // NPC 2 - Tribal Turban + Layered Robe + Folded Town Boots, on mule (behind right)
-                SpawnFollowerWithMount(
-                    player,
-                    playerFrame.origin + playerFrame.rotation.f * -2f + playerFrame.rotation.s * 1f,
-                    playerFrame.rotation.f.AsVec2,
-                    "townsman_aserai", "mule", "mule_load_b",
-                    "tuareg", "layered_robe", "folded_town_boots", null
-                );
-
-                // NPC 3 - Keffiyeh with Brown Band + Kaftan with Leather Belt + Sturdy Leather Boots, on mule (behind left)
-                SpawnFollowerWithMount(
-                    player,
-                    playerFrame.origin + playerFrame.rotation.f * -2f + playerFrame.rotation.s * -1f,
-                    playerFrame.rotation.f.AsVec2,
-                    "townsman_aserai", "mule", "mule_load_c",
-                    "aserai_civil_hscarf_a", "aserai_civil_b", "steppe_leather_boots", null
-                );
+                var frame = player.Frame;
+                int i = 0;
+                foreach (var hand in b.Hands)
+                {
+                    if (i >= 5) break;
+                    Vec3 spawnPos = frame.origin + GetSpawnOffset(i, frame);
+                    SpawnHandAgent(player, hand, spawnPos, frame.rotation.f.AsVec2);
+                    i++;
+                }
 
                 InformationManager.DisplayMessage(new InformationMessage(
-                    "Your caravan is with you.", Colors.Green));
+                    $"Your caravan is with you. ({b.TotalHands} handler{(b.TotalHands > 1 ? "s" : "")})",
+                    Colors.Green));
             }
             catch (System.Exception ex)
             {
                 InformationManager.DisplayMessage(new InformationMessage(
-                    $"Pack animal error: {ex.Message}", Colors.Red));
+                    $"Caravan spawn error: {ex.Message}", Colors.Red));
             }
         }
 
-        private void SpawnFollowerWithMount(Agent player, Vec3 spawnPos, Vec2 dirVec2,
-            string characterId, string mountId, string harnessId,
-            string headItemId, string bodyItemId, string legItemId, string capeItemId)
+        private void SpawnHandAgent(Agent player, CaravanHand hand, Vec3 spawnPos, Vec2 dirVec2)
         {
-            var riderCharacter = MBObjectManager.Instance.GetObject<CharacterObject>(characterId);
+            var riderCharacter = MBObjectManager.Instance.GetObject<CharacterObject>("townsman_aserai");
+            if (riderCharacter == null) return;
+
+            string mountId = hand.AnimalType switch
+            {
+                CaravanAnimalType.SumpterHorse => "sumpter_horse",
+                CaravanAnimalType.Mule         => "mule",
+                CaravanAnimalType.Camel        => "camel",
+                _                              => "mule"
+            };
+
+            string harnessId = hand.AnimalType switch
+            {
+                CaravanAnimalType.Mule  => MBRandom.RandomInt(0, 2) == 0 ? "mule_load_b" : "mule_load_c",
+                CaravanAnimalType.Camel => "camel_saddle_a",
+                _                      => null
+            };
+
             var mountItem = MBObjectManager.Instance.GetObject<ItemObject>(mountId);
-            if (riderCharacter == null || mountItem == null) return;
+            if (mountItem == null) return;
+
+            int outfitIdx = MBMath.ClampInt(hand.OutfitIndex, 0, Outfits.Length - 1);
+            string[] outfit = Outfits[outfitIdx];
 
             var equipment = new Equipment();
 
-            // Mount
-            equipment.AddEquipmentToSlotWithoutAgent(EquipmentIndex.Horse,
-                new EquipmentElement(mountItem));
-            var harness = MBObjectManager.Instance.GetObject<ItemObject>(harnessId);
-            if (harness != null)
-                equipment.AddEquipmentToSlotWithoutAgent(EquipmentIndex.HorseHarness,
-                    new EquipmentElement(harness));
+            equipment.AddEquipmentToSlotWithoutAgent(EquipmentIndex.Horse, new EquipmentElement(mountItem));
 
-            // Clothing
-            if (headItemId != null)
+            if (harnessId != null)
             {
-                var item = MBObjectManager.Instance.GetObject<ItemObject>(headItemId);
-                if (item != null) equipment.AddEquipmentToSlotWithoutAgent(EquipmentIndex.Head, new EquipmentElement(item));
-            }
-            if (bodyItemId != null)
-            {
-                var item = MBObjectManager.Instance.GetObject<ItemObject>(bodyItemId);
-                if (item != null) equipment.AddEquipmentToSlotWithoutAgent(EquipmentIndex.Body, new EquipmentElement(item));
-            }
-            if (legItemId != null)
-            {
-                var item = MBObjectManager.Instance.GetObject<ItemObject>(legItemId);
-                if (item != null) equipment.AddEquipmentToSlotWithoutAgent(EquipmentIndex.Leg, new EquipmentElement(item));
-            }
-            if (capeItemId != null)
-            {
-                var item = MBObjectManager.Instance.GetObject<ItemObject>(capeItemId);
-                if (item != null) equipment.AddEquipmentToSlotWithoutAgent(EquipmentIndex.Cape, new EquipmentElement(item));
+                var harness = MBObjectManager.Instance.GetObject<ItemObject>(harnessId);
+                if (harness != null)
+                    equipment.AddEquipmentToSlotWithoutAgent(EquipmentIndex.HorseHarness, new EquipmentElement(harness));
             }
 
-            var agentBuildData = new AgentBuildData(riderCharacter)
+            AddClothingSlot(equipment, EquipmentIndex.Head,  outfit[0]);
+            AddClothingSlot(equipment, EquipmentIndex.Body,  outfit[1]);
+            AddClothingSlot(equipment, EquipmentIndex.Leg,   outfit[2]);
+            AddClothingSlot(equipment, EquipmentIndex.Cape,  outfit[3]);
+
+            var buildData = new AgentBuildData(riderCharacter)
                 .InitialPosition(in spawnPos)
                 .InitialDirection(in dirVec2)
                 .Equipment(equipment)
                 .NoHorses(false);
 
-            var riderAgent = Mission.Current.SpawnAgent(agentBuildData);
+            var agent = Mission.Current.SpawnAgent(buildData);
+            if (agent?.MountAgent == null) return;
 
-            if (riderAgent != null && riderAgent.MountAgent != null)
+            var campaignComponent = agent.GetComponent<CampaignAgentComponent>();
+            if (campaignComponent == null) return;
+
+            if (campaignComponent.AgentNavigator == null)
+                campaignComponent.CreateAgentNavigator();
+
+            if (campaignComponent.AgentNavigator == null) return;
+
+            campaignComponent.AgentNavigator.AddBehaviorGroup<DailyBehaviorGroup>();
+            campaignComponent.AgentNavigator.AddBehaviorGroup<InterruptingBehaviorGroup>();
+
+            var dailyGroup = campaignComponent.AgentNavigator.GetBehaviorGroup<DailyBehaviorGroup>();
+            if (dailyGroup != null)
             {
-                var campaignComponent = riderAgent.GetComponent<CampaignAgentComponent>();
-                if (campaignComponent != null && campaignComponent.AgentNavigator == null)
-                    campaignComponent.CreateAgentNavigator();
-
-                if (campaignComponent?.AgentNavigator != null)
-                {
-                    campaignComponent.AgentNavigator.AddBehaviorGroup<DailyBehaviorGroup>();
-                    campaignComponent.AgentNavigator.AddBehaviorGroup<InterruptingBehaviorGroup>();
-
-                    var behaviorGroup = campaignComponent.AgentNavigator.GetBehaviorGroup<DailyBehaviorGroup>();
-                    if (behaviorGroup != null)
-                    {
-                        var followBehavior = behaviorGroup.AddBehavior<FollowAgentBehavior>();
-                        followBehavior.SetTargetAgent(player);
-                        behaviorGroup.SetScriptedBehavior<FollowAgentBehavior>();
-                    }
-                }
+                var follow = dailyGroup.AddBehavior<FollowAgentBehavior>();
+                follow.SetTargetAgent(player);
+                dailyGroup.SetScriptedBehavior<FollowAgentBehavior>();
             }
+        }
+
+        private static void AddClothingSlot(Equipment equipment, EquipmentIndex slot, string itemId)
+        {
+            if (itemId == null) return;
+            var item = MBObjectManager.Instance.GetObject<ItemObject>(itemId);
+            if (item != null)
+                equipment.AddEquipmentToSlotWithoutAgent(slot, new EquipmentElement(item));
         }
     }
 }

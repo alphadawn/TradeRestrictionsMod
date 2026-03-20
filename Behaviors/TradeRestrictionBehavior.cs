@@ -7,6 +7,8 @@ using TaleWorlds.Core;
 using TaleWorlds.CampaignSystem.CampaignBehaviors;
 using TaleWorlds.Library;
 using ArtOfTheTrade.Models;
+using ArtOfTheTrade.Missions;
+using TaleWorlds.MountAndBlade;
 
 namespace ArtOfTheTrade.Behaviors
 {
@@ -17,6 +19,7 @@ namespace ArtOfTheTrade.Behaviors
         public override void RegisterEvents()
         {
             CampaignEvents.DailyTickEvent.AddNonSerializedListener(this, OnDailyTick);
+            CampaignEvents.OnMissionStartedEvent.AddNonSerializedListener(this, OnMissionStarted);
         }
 
         public override void SyncData(IDataStore dataStore)
@@ -33,6 +36,19 @@ namespace ArtOfTheTrade.Behaviors
                     _certificates = Newtonsoft.Json.JsonConvert.DeserializeObject<System.Collections.Generic.List<ArtOfTheTrade.Models.TradeCertificate>>(json)
                         ?? new System.Collections.Generic.List<ArtOfTheTrade.Models.TradeCertificate>();
             }
+        }
+
+        private void OnMissionStarted(IMission mission)
+        {
+            var m = mission as TaleWorlds.MountAndBlade.Mission;
+            if (m == null) return;
+
+            var settlement = TaleWorlds.CampaignSystem.Settlements.Settlement.CurrentSettlement;
+            if (settlement == null) return;
+            if (!settlement.IsTown && !settlement.IsCastle) return;
+
+            if (!m.HasMissionBehavior<ArtOfTheTrade.Missions.PackAnimalMissionBehavior>())
+                m.AddMissionBehavior(new ArtOfTheTrade.Missions.PackAnimalMissionBehavior());
         }
 
         private void OnDailyTick()
@@ -109,6 +125,9 @@ namespace ArtOfTheTrade.Behaviors
             Campaign.Current?.GetCampaignBehavior<TradeRestrictionBehavior>();
     }
 }
+
+
+
 
 
 

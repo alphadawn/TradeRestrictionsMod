@@ -9,3 +9,4 @@ C:\Users\Ibrahim\Documents\TradeRestrictionsMod\TradeRestrictionsMod\obj\Debug\n
 C:\Users\Ibrahim\Documents\TradeRestrictionsMod\TradeRestrictionsMod\obj\Debug\net472\ArtOfThe.0C422443.Up2Date
 C:\Users\Ibrahim\Documents\TradeRestrictionsMod\TradeRestrictionsMod\obj\Debug\net472\ArtOfTheTrade.dll
 C:\Users\Ibrahim\Documents\TradeRestrictionsMod\TradeRestrictionsMod\obj\Debug\net472\ArtOfTheTrade.pdb
+C:\Users\Ibrahim\Documents\TradeRestrictionsMod\TradeRestrictionsMod\obj\Debug\net472\ArtOfTheTrade.sourcelink.json

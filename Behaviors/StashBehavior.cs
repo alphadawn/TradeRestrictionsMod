@@ -49,20 +49,33 @@ namespace ArtOfTheTrade.Behaviors
             return _stashes[settlement.StringId];
         }
 
-        public bool CanPlayerStashAt(Settlement settlement)
+        // Any town qualifies (via tavernkeeper), free if player owns/has workshop there
+        public bool CanPlayerStashAt(Settlement settlement) =>
+            settlement != null && settlement.IsTown;
+
+        // Free access: player owns the town or has a workshop there
+        public bool IsFreeStashAt(Settlement settlement)
         {
+            if (settlement == null) return false;
             var player = Hero.MainHero;
-
-            if (settlement.IsCastle && settlement.OwnerClan == player.Clan)
-                return true;
-
-            if (settlement.IsTown)
-            {
-                bool ownsWorkshop = settlement.Town.Workshops.Any(w => w.Owner == player);
-                if (ownsWorkshop) return true;
-            }
-
+            if (settlement.IsCastle && settlement.OwnerClan == player.Clan) return true;
+            if (settlement.IsTown && settlement.Town.Workshops.Any(w => w.Owner == player)) return true;
             return false;
+        }
+
+        // Returns true and charges 50g if needed; returns false if player can't afford
+        public bool TryChargeAccessFee(Settlement settlement)
+        {
+            if (IsFreeStashAt(settlement)) return true;
+            const int Fee = 50;
+            if (Hero.MainHero.Gold < Fee)
+            {
+                InformationManager.DisplayMessage(new InformationMessage(
+                    $"You need {Fee} gold to access your stash here.", Colors.Red));
+                return false;
+            }
+            GiveGoldAction.ApplyBetweenCharacters(Hero.MainHero, null, Fee, true);
+            return true;
         }
 
         public void DepositGold(Settlement settlement, int amount)

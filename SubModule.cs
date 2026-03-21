@@ -49,7 +49,7 @@ namespace ArtOfTheTrade
                 campaignStarter.AddBehavior(new CaravanHandBehavior());
                 campaignStarter.AddBehavior(new CaravanHandDialogBehavior());
                 campaignStarter.AddBehavior(new MarketIntelDialogBehavior());
-                campaignStarter.AddBehavior(new RansomDialogBehavior());
+                campaignStarter.AddBehavior(new CaptureNegotiationBehavior());
             }
         }
     }

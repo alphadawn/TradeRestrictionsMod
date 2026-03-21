@@ -1,5 +1,6 @@
 using System.Collections.Generic;
 using TaleWorlds.CampaignSystem;
+using TaleWorlds.CampaignSystem.Settlements;
 using TaleWorlds.Core;
 using TaleWorlds.Library;
 
@@ -117,6 +118,16 @@ namespace ArtOfTheTrade.Behaviors
                 relationBonus = MBMath.ClampInt(conversationHero.GetRelation(player) / 10, -5, 5);
 
             int baseChance = tier switch { 0 => 70, 1 => 45, 2 => 25, _ => 50 };
+
+            // Certificate bonus: +10% if player holds a valid certificate at this town
+            var town = Settlement.CurrentSettlement?.Town;
+            if (town != null && TradeRestrictionBehavior.Current?.HasValidCertificate(town) == true)
+                baseChance += 10;
+
+            // Caravan hand bonus: +2% per hired hand (max +10%)
+            int hands = CaravanHandBehavior.Current?.TotalHands ?? 0;
+            baseChance += MBMath.ClampInt(hands * 2, 0, 10);
+
             return MBMath.ClampInt(baseChance + skillBonus + repBonus + renownBonus + relationBonus, 5, 95);
         }
 

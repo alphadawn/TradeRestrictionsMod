@@ -76,11 +76,13 @@ Multi-round price negotiation with traders and village notables.
 | Bold | Trade >= 100 | 25% | 35% |
 
 **Success chance formula:**
-`baseChance + skillBonus + repBonus + renownBonus + relationBonus`
+`baseChance + skillBonus + repBonus + renownBonus + relationBonus + certBonus + handBonus`
 - Skill bonus: `(trade + charm) / 2 / 300 * 25` (max +25)
 - Rep bonus: `repScore / 5` (±10, from merchant memory)
 - Renown bonus: `clan.Renown / 500 * 5` (0 to +5)
 - Relation bonus: `relation / 10` (±5)
+- **Certificate bonus:** +10 if player holds a valid trade certificate at the current settlement
+- **Caravan hand bonus:** +2 per hired hand (max +10 at 5 hands)
 
 **Roll outcomes:**
 - `roll < chance * 0.6` → Full success (apply discount)
@@ -140,6 +142,8 @@ Spawn positions: right, behind-right, behind-left, far-right, far-left relative 
 
 **On player capture:** `DismissAll()` is called by `CapturePenaltyBehavior` before inventory seizure. All animal items are removed from the roster first (so they are not transferred to the captor), and the `_hands` list is cleared. No gold refund.
 
+**Haggle bonus:** Each hired hand contributes +2% to haggle success chance at any merchant (see Haggle System). Stacks with the certificate bonus.
+
 ---
 
 ### 7. Market Intelligence (`Dialogs/MarketIntelDialogBehavior.cs`)
@@ -158,47 +162,85 @@ Pay the tavernkeeper (`Occupation.Tavernkeeper`) 50 gold for a tip about nearby 
 
 ---
 
-### 8. Gold Stash (`Dialogs/StashMenuBehavior.cs`, `Behaviors/StashBehavior.cs`, `Models/Stash.cs`)
-Deposit and withdraw gold at any town where the player owns a workshop, or any castle the player owns.
+### 8. Stash (`Dialogs/StashMenuBehavior.cs`, `Behaviors/StashBehavior.cs`, `Models/Stash.cs`)
+Store gold and items safely at any town via the tavernkeeper. Both survive player capture.
 
-**Access condition:** `StashBehavior.CanPlayerStashAt(settlement)` — true if player owns the settlement or has a workshop there.
+**Access:** Talk to the tavernkeeper → "I'd like to store something safely."
+- Available at **every town** (any settlement with a tavernkeeper)
+- **Free** if player owns the town or has a workshop there (`IsFreeStashAt`)
+- **50 gold access fee** per visit otherwise (`TryChargeAccessFee`)
 
-**Menu entry:** "Manage stash" appears in the `town` and `castle` game menus (position 5).
+**Gold operations (dialog submenu):**
+- Deposit: 100 / 1,000 / 10,000 / All
+- Withdraw: 100 / 1,000 / 10,000 / All
 
-**Deposit options:** 100 / 1,000 / 10,000 / All
-**Withdraw options:** 100 / 1,000 / 10,000 / All
+**Item operations (`MBInformationManager.ShowMultiSelectionInquiry`):**
+- "Store items" — checkbox picker of player's full `ItemRoster`; each entry shows `Name x{count}` and total value hint; selected items deposited via `StashBehavior.DepositItem`
+- "Retrieve items" — checkbox picker of `stash.StoredItems`; selected items returned to `ItemRoster` via `StashBehavior.WithdrawItem`
 
-**Stash safety:** Stashed gold is stored in `StashBehavior`'s own serialized data — it is **not** in `Hero.MainHero.Gold` or `ItemRoster`. Capture penalty cannot touch it.
+**Settlement lost:** `OnSettlementOwnerChangedEvent` — if player loses the settlement, stored gold and items are transferred to the new owner's party. Stash entry is deleted.
 
-**Serialization:** Per-settlement stash data saved via `IDataStore.SyncData` using Newtonsoft.Json.
+**Stash safety:** Stash data lives in `StashBehavior`'s own serialized `Dictionary<string, Stash>`, keyed by `settlement.StringId`. It is **not** in `Hero.MainHero.Gold` or `MobileParty.MainParty.ItemRoster` — capture penalty cannot touch it.
+
+**Data model:** `Stash` → `StoredGold (int)` + `StoredItems (List<StoredItem>)`. `StoredItem` → `ItemId (string)` + `Count (int)`.
+
+**Serialization:** Newtonsoft.Json via `IDataStore.SyncData`.
 
 ---
 
-### 9. Capture Penalty & Ransom (`Behaviors/CapturePenaltyBehavior.cs`, `Dialogs/RansomDialogBehavior.cs`)
-When the player is captured, gold and inventory are seized. A ransom negotiation dialog is then available when talking to the captor lord.
+### 9. Capture Penalty & Negotiation (`Behaviors/CapturePenaltyBehavior.cs`, `Dialogs/RansomDialogBehavior.cs`)
+When the player is captured, gold and inventory are seized. Two pre-battle encounter-menu options then allow negotiation — one to avoid capture before it happens, one to recover goods from a lord you later catch.
 
-**On capture (`HeroPrisonerTaken` event):**
-1. `CaravanHandBehavior.DismissAll()` fires first — animal items removed from roster before seizure (hands scatter, no refund)
-2. Gold transferred to captor lord (`GiveGoldAction`), or lost if captured by bandits
-3. All `ItemRoster` items transferred to captor's party
-4. Stash gold is unaffected (not in ItemRoster or Hero.Gold)
+**On capture (`HeroPrisonerTaken` event) — full flow:**
+1. Check grace period — if same lord captured us within 1 in-game day of a mercy release, release again with no penalty and return
+2. `CaravanHandBehavior.DismissAll()` — animal items removed from roster before seizure (hands scatter, no refund)
+3. **Clan tier ≤ 1 + captor has `DefaultTraits.Mercy > 0`** → lord releases player immediately via `EndCaptivityAction.ApplyByReleasedByChoice`; nothing taken; 1-day grace period set against this lord
+4. **Clan tier ≤ 1, no Mercy** → lord takes 25% of gold only, leaves items; captor tracked for future recovery
+5. **Normal tier / bandits** → full penalty: all gold taken, all `ItemRoster` items seized and added to captor's party roster; total item value recorded in `_itemValueTaken`
+6. Stash gold **and** stash items are **unaffected** (not in `Hero.Gold` or `ItemRoster`)
 
-**Ransom dialog** — shown in `hero_main_options` when talking to the lord who captured you:
-- Condition: `Hero.MainHero.IsPrisoner` && `CapturePenaltyBehavior.CanNegotiateRansom(conversationHero)`
-- Bandits do not offer ransom negotiation
+---
 
-**Two-attempt persuasion:**
-| Attempt | Base chance | Gold returned on success |
-|---------|------------|--------------------------|
-| 1st | 45% | 40% of gold taken |
-| 2nd | 25% | 20% of gold taken |
+**Scenario 1 — Offer safe passage (avoid capture, pre-battle)**
 
-**Skill bonus (both attempts):** `(Charm + Trade) / 2 / 300 * 30%` (max +30%)
+Appears in the `"encounter"` game menu when the encountered party leader is a lord (non-minor-faction clan) and the player has ≥100 gold.
+
+Three offer tiers:
+| Offer | Base accept chance |
+|-------|--------------------|
+| 25% of gold | 30% |
+| 50% of gold | 55% |
+| 75% of gold | 75% |
+
+**Skill bonus:** `(Charm + Trade) / 2 / 300 * 20%` (max +20%)
+
+On accept: gold paid via `GiveGoldAction`, `PlayerEncounter.Finish()` — player goes free.
+On reject: menu returns to `"encounter"` for normal battle.
+
+---
+
+**Scenario 2 — Demand return of goods (recovery, pre-battle)**
+
+Appears in the `"encounter"` game menu when the encountered party leader is the lord who previously seized the player's belongings (`HasPendingClaimAgainst`).
+
+Lord makes a single offer calculated from:
+- Base 30%
+- `+5%` per level of `DefaultTraits.Honor`
+- `+5%` per level of `DefaultTraits.Generosity`
+- `±10%` from relation (`relation / 100 * 10%`)
+- `+10%` max from player renown (`renown / 1000 * 10%`)
+- Clamped to 10–80%
+
+Player options: **Accept** (receive gold equivalent via `ApplyRecovery`, claim cleared, `PlayerEncounter.Finish()`) or **Refuse** (return to `"encounter"` for battle).
+
+---
 
 **State tracked (serialized):**
-- `_lastCaptorId` — StringId of the capturing hero
-- `_goldTaken` — gold taken at capture (used to compute return amount)
-- `_attemptsLeft` — decrements on each attempt; 0 = dialog hidden
+- `_lastCaptorId` — StringId of the capturing hero (used for recovery claim check)
+- `_goldTaken` — gold taken at capture
+- `_itemValueTaken` — total `item.Value * count` of seized items (used for recovery offer calculation)
+- `_gracePeriodCaptorId` — StringId of the lord who just gave a mercy/low-tier release
+- `_gracePeriodEndsDay` — campaign day when the grace period expires (set to `today + 1.0`)
 
 ---
 

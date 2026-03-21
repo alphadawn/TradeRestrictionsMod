@@ -43,36 +43,43 @@ namespace ArtOfTheTrade.Patches
                 if (clientParty != playerParty && merchant?.MobileParty != playerParty) return;
 
                 var settlement = merchant?.Settlement ?? clientParty?.CurrentSettlement;
-                if (settlement == null || !settlement.IsTown) return;
-                if (settlement.Town == null) return;
+                if (settlement == null) return;
 
-                // Apply trade restriction penalty (10x if no deal/certificate)
-                var behavior = TradeRestrictionBehavior.Current;
-                if (behavior != null && !behavior.CanPlayerTradeAt(settlement.Town))
+                // Apply trade restriction penalty — towns only
+                if (settlement.IsTown && settlement.Town != null)
                 {
-                    if (isSelling)
-                        __result = (int)(__result * 0.5f); // Sell for less
-                    else
-                        __result = __result * 5; // Buy for more
-
-                    // Only show warning once per settlement
-                    if (!isSelling && _lastWarnedSettlement != settlement.StringId)
+                    var behavior = TradeRestrictionBehavior.Current;
+                    if (behavior != null && !behavior.CanPlayerTradeAt(settlement.Town))
                     {
-                        _lastWarnedSettlement = settlement.StringId;
-                        InformationManager.DisplayMessage(new InformationMessage(
-                            $"No trade deal or certificate for {settlement.Name}. Prices are 10x!", Colors.Red));
+                        if (isSelling)
+                            __result = (int)(__result * 0.5f);
+                        else
+                            __result = __result * 5;
+
+                        if (!isSelling && _lastWarnedSettlement != settlement.StringId)
+                        {
+                            _lastWarnedSettlement = settlement.StringId;
+                            InformationManager.DisplayMessage(new InformationMessage(
+                                $"No trade deal or certificate for {settlement.Name}. Buy prices are 5x, sell prices halved.", Colors.Red));
+                        }
+                    }
+                    else
+                    {
+                        _lastWarnedSettlement = null;
                     }
                 }
-                else
-                {
-                    // Reset warning when player can trade normally
-                    _lastWarnedSettlement = null;
-                }
 
-                // Apply haggle modifier independently
+                // Apply haggle modifier — towns and villages
+                // isSelling = true means the merchant/settlement is selling (player is BUYING)
+                // isSelling = false means the merchant/settlement is buying (player is SELLING)
                 var haggle = HaggleBehavior.Current;
-                if (haggle != null && haggle.CurrentPriceModifier != 1f)
-                    __result = (int)(__result * haggle.CurrentPriceModifier);
+                if (haggle != null)
+                {
+                    if (isSelling && haggle.BuyModifier != 1f)
+                        __result = (int)(__result * haggle.BuyModifier);
+                    else if (!isSelling && haggle.SellModifier != 1f)
+                        __result = (int)(__result * haggle.SellModifier);
+                }
             }
             catch { }
         }

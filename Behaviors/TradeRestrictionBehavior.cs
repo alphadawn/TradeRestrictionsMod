@@ -7,6 +7,8 @@ using TaleWorlds.Core;
 using TaleWorlds.CampaignSystem.CampaignBehaviors;
 using TaleWorlds.Library;
 using ArtOfTheTrade.Models;
+using ArtOfTheTrade.Missions;
+using TaleWorlds.MountAndBlade;
 
 namespace ArtOfTheTrade.Behaviors
 {
@@ -17,6 +19,7 @@ namespace ArtOfTheTrade.Behaviors
         public override void RegisterEvents()
         {
             CampaignEvents.DailyTickEvent.AddNonSerializedListener(this, OnDailyTick);
+            CampaignEvents.OnMissionStartedEvent.AddNonSerializedListener(this, OnMissionStarted);
         }
 
         public override void SyncData(IDataStore dataStore)
@@ -33,6 +36,19 @@ namespace ArtOfTheTrade.Behaviors
                     _certificates = Newtonsoft.Json.JsonConvert.DeserializeObject<System.Collections.Generic.List<ArtOfTheTrade.Models.TradeCertificate>>(json)
                         ?? new System.Collections.Generic.List<ArtOfTheTrade.Models.TradeCertificate>();
             }
+        }
+
+        private void OnMissionStarted(IMission mission)
+        {
+            var m = mission as TaleWorlds.MountAndBlade.Mission;
+            if (m == null) return;
+
+            var settlement = TaleWorlds.CampaignSystem.Settlements.Settlement.CurrentSettlement;
+            if (settlement == null) return;
+            if (!settlement.IsTown && !settlement.IsCastle && !settlement.IsVillage) return;
+
+            if (!m.HasMissionBehavior<ArtOfTheTrade.Missions.PackAnimalMissionBehavior>())
+                m.AddMissionBehavior(new ArtOfTheTrade.Missions.PackAnimalMissionBehavior());
         }
 
         private void OnDailyTick()
@@ -75,6 +91,11 @@ namespace ArtOfTheTrade.Behaviors
 
         public bool HasValidCertificate(Town town)
         {
+            // Certificate is automatically revoked when at war with the town's faction
+            if (Hero.MainHero?.MapFaction != null && town.MapFaction != null
+                && Hero.MainHero.MapFaction.IsAtWarWith(town.MapFaction))
+                return false;
+
             float today = (float)CampaignTime.Now.ToDays;
             return _certificates.Any(c => c.TownId == town.StringId && c.IsValid(today));
         }
@@ -100,7 +121,7 @@ namespace ArtOfTheTrade.Behaviors
             GiveGoldAction.ApplyForCharacterToSettlement(player, town.Settlement, price);
             _certificates.Add(new TradeCertificate(town, (float)CampaignTime.Now.ToDays, durationInDays));
 
-            string duration = durationInDays >= 84f ? "1 year" : "6 months";
+            string duration = durationInDays >= 84f ? "1 year" : durationInDays >= 42f ? "6 months" : durationInDays >= 7f ? "1 week" : "3 days";
             InformationManager.DisplayMessage(new InformationMessage(
                 $"Certificate purchased for {town.Name}. Valid for {duration}."));
         }
@@ -109,6 +130,9 @@ namespace ArtOfTheTrade.Behaviors
             Campaign.Current?.GetCampaignBehavior<TradeRestrictionBehavior>();
     }
 }
+
+
+
 
 
 

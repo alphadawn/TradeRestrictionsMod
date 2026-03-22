@@ -7,12 +7,13 @@ using TaleWorlds.CampaignSystem.Settlements;
 using TaleWorlds.Core;
 using TaleWorlds.Library;
 using ArtOfTheTrade.Models;
+using ArtOfTheTrade.Save;
 
 namespace ArtOfTheTrade.Behaviors
 {
     public class StashBehavior : CampaignBehaviorBase
     {
-        private Dictionary<string, Stash> _stashes = new Dictionary<string, Stash>();
+        private Dictionary<string, Stash> _stashes => ModSaveManager.Data.Stashes;
 
         public override void RegisterEvents()
         {
@@ -21,21 +22,7 @@ namespace ArtOfTheTrade.Behaviors
             );
         }
 
-        public override void SyncData(IDataStore dataStore)
-        {
-            if (dataStore.IsSaving)
-            {
-                var json = Newtonsoft.Json.JsonConvert.SerializeObject(_stashes);
-                dataStore.SyncData("ArtOfTheTrade_Stashes", ref json);
-            }
-            if (dataStore.IsLoading)
-            {
-                var json = "";
-                if (dataStore.SyncData("ArtOfTheTrade_Stashes", ref json) && !string.IsNullOrEmpty(json))
-                    _stashes = Newtonsoft.Json.JsonConvert.DeserializeObject<System.Collections.Generic.Dictionary<string, ArtOfTheTrade.Models.Stash>>(json)
-                        ?? new System.Collections.Generic.Dictionary<string, ArtOfTheTrade.Models.Stash>();
-            }
-        }
+        public override void SyncData(IDataStore dataStore) { /* handled by ModDataBehavior */ }
 
         public bool HasStashAt(Settlement settlement)
         {

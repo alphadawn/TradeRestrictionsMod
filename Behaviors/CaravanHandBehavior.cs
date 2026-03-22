@@ -7,15 +7,17 @@ using TaleWorlds.Core;
 using TaleWorlds.Library;
 using TaleWorlds.ObjectSystem;
 using ArtOfTheTrade.Models;
+using ArtOfTheTrade.Save;
 
 namespace ArtOfTheTrade.Behaviors
 {
     public class CaravanHandBehavior : CampaignBehaviorBase
     {
-        private List<CaravanHand> _hands = new List<CaravanHand>();
+        // Delegates directly to ModSaveManager.Data so data is always in sync with the JSON file
+        private List<CaravanHand> Hands_ => ModSaveManager.Data.CaravanHands;
 
-        public IReadOnlyList<CaravanHand> Hands => _hands.AsReadOnly();
-        public int TotalHands => _hands.Count;
+        public IReadOnlyList<CaravanHand> Hands => Hands_.AsReadOnly();
+        public int TotalHands => Hands_.Count;
 
         public int MaxAllowed
         {
@@ -66,40 +68,26 @@ namespace ArtOfTheTrade.Behaviors
             _ => "mule"
         };
 
-        public int TotalDailyUpkeep => _hands.Sum(h => GetDailyUpkeep(h.AnimalType));
-        public int TotalCapacityBonus => _hands.Sum(h => GetCapacityBonus(h.AnimalType));
-        public int CountOf(CaravanAnimalType type) => _hands.Count(h => h.AnimalType == type);
+        public int TotalDailyUpkeep => Hands_.Sum(h => GetDailyUpkeep(h.AnimalType));
+        public int TotalCapacityBonus => Hands_.Sum(h => GetCapacityBonus(h.AnimalType));
+        public int CountOf(CaravanAnimalType type) => Hands_.Count(h => h.AnimalType == type);
 
         public override void RegisterEvents()
         {
             CampaignEvents.DailyTickEvent.AddNonSerializedListener(this, OnDailyTick);
         }
 
-        public override void SyncData(IDataStore dataStore)
-        {
-            if (dataStore.IsSaving)
-            {
-                var json = Newtonsoft.Json.JsonConvert.SerializeObject(_hands);
-                dataStore.SyncData("ArtOfTheTrade_CaravanHands", ref json);
-            }
-            if (dataStore.IsLoading)
-            {
-                var json = "";
-                if (dataStore.SyncData("ArtOfTheTrade_CaravanHands", ref json) && !string.IsNullOrEmpty(json))
-                    _hands = Newtonsoft.Json.JsonConvert.DeserializeObject<List<CaravanHand>>(json)
-                        ?? new List<CaravanHand>();
-            }
-        }
+        public override void SyncData(IDataStore dataStore) { /* handled by ModDataBehavior */ }
 
         public bool TryHire(CaravanAnimalType type)
         {
-            if (_hands.Count >= 5)
+            if (Hands_.Count >= 5)
             {
                 InformationManager.DisplayMessage(new InformationMessage(
                     "You cannot have more than 5 caravan hands.", Colors.Red));
                 return false;
             }
-            if (_hands.Count >= MaxAllowed)
+            if (Hands_.Count >= MaxAllowed)
             {
                 string msg = MaxAllowed == 0
                     ? "You need at least 10 party members before you can manage caravan hands."
@@ -122,7 +110,7 @@ namespace ArtOfTheTrade.Behaviors
             if (item != null)
                 MobileParty.MainParty?.ItemRoster?.AddToCounts(item, 1);
 
-            _hands.Add(new CaravanHand { AnimalType = type, OutfitIndex = MBRandom.RandomInt(0, 3) });
+            Hands_.Add(new CaravanHand { AnimalType = type, OutfitIndex = MBRandom.RandomInt(0, 3) });
 
             InformationManager.DisplayMessage(new InformationMessage(
                 $"Hired a {GetAnimalName(type)} handler. (+{GetCapacityBonus(type)} carry capacity, {GetDailyUpkeep(type)} gold/day)",
@@ -132,10 +120,10 @@ namespace ArtOfTheTrade.Behaviors
 
         public bool TryDismiss(CaravanAnimalType type)
         {
-            var hand = _hands.FirstOrDefault(h => h.AnimalType == type);
+            var hand = Hands_.FirstOrDefault(h => h.AnimalType == type);
             if (hand == null) return false;
 
-            _hands.Remove(hand);
+            Hands_.Remove(hand);
 
             var item = MBObjectManager.Instance.GetObject<ItemObject>(GetItemId(type));
             if (item != null)
@@ -148,21 +136,21 @@ namespace ArtOfTheTrade.Behaviors
 
         private void OnDailyTick()
         {
-            if (_hands.Count == 0) return;
+            if (Hands_.Count == 0) return;
 
             SyncWithRoster();
 
-            if (_hands.Count == 0) return;
+            if (Hands_.Count == 0) return;
 
-            int totalUpkeep = _hands.Sum(h => GetDailyUpkeep(h.AnimalType));
+            int totalUpkeep = Hands_.Sum(h => GetDailyUpkeep(h.AnimalType));
             if (Hero.MainHero.Gold >= totalUpkeep)
             {
                 GiveGoldAction.ApplyBetweenCharacters(Hero.MainHero, null, totalUpkeep, true);
             }
             else
             {
-                var costliest = _hands.OrderByDescending(h => GetDailyUpkeep(h.AnimalType)).First();
-                _hands.Remove(costliest);
+                var costliest = Hands_.OrderByDescending(h => GetDailyUpkeep(h.AnimalType)).First();
+                Hands_.Remove(costliest);
 
                 var item = MBObjectManager.Instance.GetObject<ItemObject>(GetItemId(costliest.AnimalType));
                 if (item != null)
@@ -185,27 +173,27 @@ namespace ArtOfTheTrade.Behaviors
                 if (item == null) continue;
 
                 int inRoster = roster.GetItemNumber(item);
-                while (_hands.Count(h => h.AnimalType == type) > inRoster)
-                    _hands.Remove(_hands.First(h => h.AnimalType == type));
+                while (Hands_.Count(h => h.AnimalType == type) > inRoster)
+                    Hands_.Remove(Hands_.First(h => h.AnimalType == type));
             }
         }
 
         // Called on capture — animals scatter, no refund
         public void DismissAll()
         {
-            if (_hands.Count == 0) return;
+            if (Hands_.Count == 0) return;
 
             foreach (CaravanAnimalType type in System.Enum.GetValues(typeof(CaravanAnimalType)))
             {
                 var item = MBObjectManager.Instance.GetObject<ItemObject>(GetItemId(type));
                 if (item == null) continue;
-                int count = _hands.Count(h => h.AnimalType == type);
+                int count = Hands_.Count(h => h.AnimalType == type);
                 if (count > 0)
                     MobileParty.MainParty?.ItemRoster?.AddToCounts(item, -count);
             }
 
-            int total = _hands.Count;
-            _hands.Clear();
+            int total = Hands_.Count;
+            Hands_.Clear();
 
             InformationManager.DisplayMessage(new InformationMessage(
                 $"Your {total} caravan hand(s) scattered when you were captured.", Colors.Yellow));

@@ -6,6 +6,7 @@ using TaleWorlds.CampaignSystem.Settlements;
 using TaleWorlds.Core;
 using TaleWorlds.Library;
 using TaleWorlds.Localization;
+using ArtOfTheTrade.Save;
 
 namespace ArtOfTheTrade.Dialogs
 {
@@ -15,7 +16,7 @@ namespace ArtOfTheTrade.Dialogs
         private const float NearbyRadius = 150f;
         private const float CooldownDays = 3f;
 
-        private Dictionary<string, float> _lastIntelDay = new Dictionary<string, float>();
+        private Dictionary<string, float> _lastIntelDay => ModSaveManager.Data.LastIntelDay;
         private string _lastTip = null;
 
         public override void RegisterEvents()
@@ -163,6 +164,6 @@ namespace ArtOfTheTrade.Dialogs
             return $"Nothing dramatic, but {item.Name} has been selling a little high in {town.Name} lately — around {pct}% above normal. Might be worth stopping by.";
         }
 
-        public override void SyncData(IDataStore dataStore) { }
+        public override void SyncData(IDataStore dataStore) { /* handled by ModDataBehavior */ }
     }
 }

@@ -114,8 +114,8 @@ Two dialog options added for `Occupation.RuralNotable` in villages:
 
 ---
 
-### 6. Caravan Hands (`Behaviors/CaravanHandBehavior.cs`, `Dialogs/CaravanHandDialogBehavior.cs`, `Missions/PackAnimalMissionBehavior.cs`)
-Hire animal handlers from the horse trader in towns. They follow the player in missions and increase carry capacity on the campaign map.
+### 6. Caravan Hands (`Behaviors/CaravanHandBehavior.cs`, `Dialogs/CaravanHandDialogBehavior.cs`, `Missions/PackAnimalMissionBehavior.cs`, `Patches/SpawnCamelPatch.cs`)
+Hire animal handlers from the horse trader in towns. They follow the player in missions and increase carry capacity on the campaign map. The player and companions also spawn on camels in outdoor settlement scenes.
 
 **Animal types:**
 | Type | Hire cost | Capacity bonus | Upkeep |
@@ -138,7 +138,18 @@ sold manually, corresponding hands are removed.
 Outfits randomized on hire (index 0–2 stored in `CaravanHand.OutfitIndex`).
 Spawn positions: right, behind-right, behind-left, far-right, far-left relative to player frame.
 
-**Skipped scenes:** tavern, lordshall, arena (checked via `Mission.Current.SceneName`).
+**Scene filtering (handlers and player/companion camel):**
+Two conditions must both pass for spawning to occur:
+1. Current scene name must not contain any of: `tavern`, `lordshall`, `arena`, `prison`, `dungeon`, `interior`, `keep` — checked via `CamelPatchHelper.IsInteriorScene()`
+2. The previous mission's scene must also pass the same check — i.e. the player must be entering from the campaign map, not returning from a sub-location (tavern, keep, prison). Tracked via `CamelPatchHelper.LastEndedSceneName`, set by `SceneTrackingMissionBehavior.OnEndMission()` which is added to all settlement missions. Reset to `""` by a `CampaignEvents.TickEvent` listener (fires only on the campaign map), so Tab-out → map → re-enter correctly spawns the camel again.
+
+**Player/companion camel:** `SpawnCamelPatch.cs` uses Harmony to patch `SandBoxHelpers+MissionHelper.SpawnPlayer` and `MissionAgentHandler.SpawnWanderingAgentWithInitialFrame`. Before spawning, it temporarily swaps the civilian equipment horse slot to a camel with `camel_saddle_a`, then restores the original after spawn. Both patches call `CamelPatchHelper.ShouldSpawnCamel()` which applies the same two-condition scene filter above.
+
+**Dismiss / Recall (key `0`):**
+Press `0` while handlers are following to send them to trade with notables:
+- Each handler's `FollowAgentBehavior` target is switched from the player to a notable agent found in the scene (`settlement.Notables` matched against `Mission.Current.Agents`). Handlers cycle through notables if there are fewer notables than handlers.
+- Press `0` again to recall — all handlers retarget the player.
+- If no notables are found in the scene, dismiss is blocked with a message.
 
 **On player capture:** `DismissAll()` is called by `CapturePenaltyBehavior` before inventory seizure. All animal items are removed from the roster first (so they are not transferred to the captor), and the `_hands` list is cleared. No gold refund.
 
@@ -244,7 +255,47 @@ Player options: **Accept** (receive gold equivalent via `ApplyRecovery`, claim c
 
 ---
 
+### 10. External Save System (`Save/ModSaveData.cs`, `Save/ModSaveManager.cs`, `Behaviors/ModDataBehavior.cs`)
+All mod data is stored in a per-campaign JSON file on disk rather than inside the game's native `.sav` file. This eliminates save corruption from Newtonsoft.Json serialisation errors inside `IDataStore`.
+
+**Files saved to:**
+`Documents/Mount and Blade II Bannerlord/ArtOfTradeSaves/aot_{guid}.json`
+
+**GUID lifecycle:**
+| Situation | Result |
+|-----------|--------|
+| New campaign | GUID generated once via `Guid.NewGuid()`, stored in `.sav`, JSON created |
+| Same campaign, any save slot | Same GUID written to every slot → same JSON overwritten |
+| Autosave | Identical to manual save — fires same `SyncData(IsSaving)` path |
+| Mod added to existing save (no GUID present) | New GUID generated → new JSON, as if a fresh start |
+| Second campaign | Different `.sav` → different GUID → different JSON, both files coexist |
+
+**Important:** All save slots of the same playthrough share one GUID and one JSON. If you reload an older slot, the JSON it reads reflects the **most recent** session, not the state when that slot was created. This is a known tradeoff of external saves — rolling back a slot does not roll back mod data.
+
+**Architecture:**
+- `ModDataBehavior` is registered **first** in `SubModule`. Its `SyncData` is the only place `IDataStore` is touched (read/write of the GUID string). All other behaviors have empty `SyncData`.
+- All other behaviors access their persistent data via `ModSaveManager.Data.*` properties directly — mutations are live in memory immediately and flushed to JSON on the next save event.
+- `ModSaveManager.WriteToFile()` can also be called at any point for an immediate flush (e.g. after a significant state change).
+
+**Data contained in `ModSaveData`:**
+| Field | Owner |
+|-------|-------|
+| `CaravanHands` | `CaravanHandBehavior` |
+| `MerchantData` | `HaggleBehavior` |
+| `LastCaptorId`, `GoldTaken`, `ItemValueTaken`, `GracePeriodCaptorId`, `GracePeriodEndsDay` | `CapturePenaltyBehavior` |
+| `Certificates` | `TradeRestrictionBehavior` |
+| `Stashes` | `StashBehavior` |
+| `LastIntelDay` | `MarketIntelDialogBehavior` |
+
+---
+
 ## Key APIs Reference
+
+### Scene Names
+All unique settlement scene names (from `SandBox/ModuleData/settlements.xml`) are saved to:
+`Documents/TradeRestrictionsMod/bannerlord_scene_names.json`
+
+To regenerate, run: `powershell.exe -ExecutionPolicy Bypass -File "C:/Users/Ibrahim/Documents/TradeRestrictionsMod/extract_scenes.ps1"`
 
 ### Dialog System
 ```csharp

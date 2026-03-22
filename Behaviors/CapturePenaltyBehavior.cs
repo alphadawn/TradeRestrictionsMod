@@ -6,21 +6,21 @@ using TaleWorlds.CampaignSystem.CharacterDevelopment;
 using TaleWorlds.CampaignSystem.Party;
 using TaleWorlds.Core;
 using TaleWorlds.Library;
+using ArtOfTheTrade.Save;
 
 namespace ArtOfTheTrade.Behaviors
 {
     public class CapturePenaltyBehavior : CampaignBehaviorBase
     {
-        private string _lastCaptorId = null;
-        private int _goldTaken = 0;
-        private int _itemValueTaken = 0;
+        // All persistent state lives in ModSaveManager.Data
+        private string LastCaptorId        { get => ModSaveManager.Data.LastCaptorId;        set => ModSaveManager.Data.LastCaptorId = value; }
+        private int    GoldTakenVal        { get => ModSaveManager.Data.GoldTaken;           set => ModSaveManager.Data.GoldTaken = value; }
+        private int    ItemValueTakenVal   { get => ModSaveManager.Data.ItemValueTaken;      set => ModSaveManager.Data.ItemValueTaken = value; }
+        private string GracePeriodCaptor   { get => ModSaveManager.Data.GracePeriodCaptorId; set => ModSaveManager.Data.GracePeriodCaptorId = value; }
+        private float  GracePeriodEndsDay  { get => ModSaveManager.Data.GracePeriodEndsDay;  set => ModSaveManager.Data.GracePeriodEndsDay = value; }
 
-        // Grace period — prevents immediate recapture after a mercy/early-tier release
-        private string _gracePeriodCaptorId = null;
-        private float _gracePeriodEndsDay = 0f;
-
-        public int GoldTaken => _goldTaken;
-        public int ItemValueTaken => _itemValueTaken;
+        public int GoldTaken      => ModSaveManager.Data.GoldTaken;
+        public int ItemValueTaken => ModSaveManager.Data.ItemValueTaken;
 
         public static CapturePenaltyBehavior Current =>
             Campaign.Current?.GetCampaignBehavior<CapturePenaltyBehavior>();
@@ -30,23 +30,16 @@ namespace ArtOfTheTrade.Behaviors
             CampaignEvents.HeroPrisonerTaken.AddNonSerializedListener(this, OnHeroPrisonerTaken);
         }
 
-        public override void SyncData(IDataStore dataStore)
-        {
-            dataStore.SyncData("ArtOfTheTrade_CaptureLastCaptorId", ref _lastCaptorId);
-            dataStore.SyncData("ArtOfTheTrade_CaptureGoldTaken", ref _goldTaken);
-            dataStore.SyncData("ArtOfTheTrade_CaptureItemValueTaken", ref _itemValueTaken);
-            dataStore.SyncData("ArtOfTheTrade_GracePeriodCaptorId", ref _gracePeriodCaptorId);
-            dataStore.SyncData("ArtOfTheTrade_GracePeriodEndsDay", ref _gracePeriodEndsDay);
-        }
+        public override void SyncData(IDataStore dataStore) { /* handled by ModDataBehavior */ }
 
         public bool HasPendingClaimAgainst(Hero hero) =>
             hero != null
-            && hero.StringId == _lastCaptorId
-            && (_goldTaken > 0 || _itemValueTaken > 0);
+            && hero.StringId == LastCaptorId
+            && (GoldTakenVal > 0 || ItemValueTakenVal > 0);
 
         public int CalculateLordOffer(Hero lord)
         {
-            int totalLost = _goldTaken + _itemValueTaken;
+            int totalLost = GoldTakenVal + ItemValueTakenVal;
             if (totalLost <= 0 || lord == null) return 0;
 
             float pct = 0.30f;
@@ -72,9 +65,9 @@ namespace ArtOfTheTrade.Behaviors
                 else
                     GiveGoldAction.ApplyBetweenCharacters(null, Hero.MainHero, amount, true);
             }
-            _goldTaken = 0;
-            _itemValueTaken = 0;
-            _lastCaptorId = null;
+            GoldTakenVal = 0;
+            ItemValueTakenVal = 0;
+            LastCaptorId = null;
         }
 
         private void OnHeroPrisonerTaken(PartyBase capturer, Hero prisoner)
@@ -86,8 +79,8 @@ namespace ArtOfTheTrade.Behaviors
 
             // ── Grace period: same lord captured us again right after releasing us ──
             if (captorHero != null
-                && captorHero.StringId == _gracePeriodCaptorId
-                && today < _gracePeriodEndsDay)
+                && captorHero.StringId == GracePeriodCaptor
+                && today < GracePeriodEndsDay)
             {
                 EndCaptivityAction.ApplyByReleasedByChoice(prisoner, captorHero);
                 InformationManager.DisplayMessage(new InformationMessage(
@@ -110,11 +103,11 @@ namespace ArtOfTheTrade.Behaviors
                 if (mercy > 0)
                 {
                     // Merciful lord: releases without taking anything
-                    _gracePeriodCaptorId = captorHero.StringId;
-                    _gracePeriodEndsDay = today + 1.0f;
-                    _lastCaptorId = null;
-                    _goldTaken = 0;
-                    _itemValueTaken = 0;
+                    GracePeriodCaptor  = captorHero.StringId;
+                    GracePeriodEndsDay = today + 1.0f;
+                    LastCaptorId       = null;
+                    GoldTakenVal       = 0;
+                    ItemValueTakenVal  = 0;
                     EndCaptivityAction.ApplyByReleasedByChoice(prisoner, captorHero);
                     InformationManager.DisplayMessage(new InformationMessage(
                         $"{captorHero.Name} looks you over and shakes his head. \"You are barely worth the trouble. Take your things and go.\"",
@@ -125,9 +118,9 @@ namespace ArtOfTheTrade.Behaviors
                 {
                     // No mercy, but recognises you're small — takes only 25% of gold, leaves items
                     int taken = Math.Max(0, playerGold / 4);
-                    _lastCaptorId = captorHero.StringId;
-                    _goldTaken = taken;
-                    _itemValueTaken = 0;
+                    LastCaptorId      = captorHero.StringId;
+                    GoldTakenVal      = taken;
+                    ItemValueTakenVal = 0;
 
                     if (taken > 0)
                     {
@@ -147,9 +140,9 @@ namespace ArtOfTheTrade.Behaviors
             }
 
             // ── Full penalty (normal clan tier or bandits) ──────────────────
-            _lastCaptorId = captorHero?.StringId;
-            _goldTaken = playerGold;
-            _itemValueTaken = 0;
+            LastCaptorId      = captorHero?.StringId;
+            GoldTakenVal      = playerGold;
+            ItemValueTakenVal = 0;
 
             if (playerGold > 0)
             {
@@ -185,7 +178,7 @@ namespace ArtOfTheTrade.Behaviors
                     capturer.MobileParty.ItemRoster.AddToCounts(el.EquipmentElement.Item, el.Amount);
             }
 
-            _itemValueTaken = itemValue;
+            ItemValueTakenVal = itemValue;
             if (itemValue > 0)
                 InformationManager.DisplayMessage(new InformationMessage(
                     "Your inventory was seized by your captors.", Colors.Red));

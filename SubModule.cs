@@ -39,6 +39,10 @@ namespace ArtOfTheTrade
             base.OnGameStart(game, gameStarter);
             if (gameStarter is CampaignGameStarter campaignStarter)
             {
+                // ModDataBehavior MUST be first — its SyncData loads the external JSON
+                // before any other behavior touches ModSaveManager.Data
+                campaignStarter.AddBehavior(new ModDataBehavior());
+
                 var certDialog = new CertificateDialogBehavior();
                 campaignStarter.AddBehavior(new TradeRestrictionBehavior());
                 campaignStarter.AddBehavior(new StashBehavior());

@@ -3,6 +3,7 @@ using TaleWorlds.CampaignSystem;
 using TaleWorlds.CampaignSystem.Settlements;
 using TaleWorlds.Core;
 using TaleWorlds.Library;
+using ArtOfTheTrade.Save;
 
 namespace ArtOfTheTrade.Behaviors
 {
@@ -16,7 +17,7 @@ namespace ArtOfTheTrade.Behaviors
 
     public class HaggleBehavior : CampaignBehaviorBase
     {
-        private Dictionary<string, MerchantRecord> _merchantData = new Dictionary<string, MerchantRecord>();
+        private Dictionary<string, MerchantRecord> MerchantData_ => ModSaveManager.Data.MerchantData;
 
         private float _buyModifier = 1f;
         private float _sellModifier = 1f;
@@ -37,28 +38,14 @@ namespace ArtOfTheTrade.Behaviors
             CampaignEvents.DailyTickEvent.AddNonSerializedListener(this, OnDailyTick);
         }
 
-        public override void SyncData(IDataStore dataStore)
-        {
-            if (dataStore.IsSaving)
-            {
-                var json = Newtonsoft.Json.JsonConvert.SerializeObject(_merchantData);
-                dataStore.SyncData("ArtOfTheTrade_MerchantData", ref json);
-            }
-            if (dataStore.IsLoading)
-            {
-                var json = "";
-                if (dataStore.SyncData("ArtOfTheTrade_MerchantData", ref json) && !string.IsNullOrEmpty(json))
-                    _merchantData = Newtonsoft.Json.JsonConvert.DeserializeObject<Dictionary<string, MerchantRecord>>(json)
-                        ?? new Dictionary<string, MerchantRecord>();
-            }
-        }
+        public override void SyncData(IDataStore dataStore) { /* handled by ModDataBehavior */ }
 
         private MerchantRecord GetOrCreate(string id)
         {
-            if (!_merchantData.TryGetValue(id, out var record))
+            if (!MerchantData_.TryGetValue(id, out var record))
             {
                 record = new MerchantRecord();
-                _merchantData[id] = record;
+                MerchantData_[id] = record;
             }
             return record;
         }
@@ -83,7 +70,7 @@ namespace ArtOfTheTrade.Behaviors
             string id = characterId ?? merchant?.StringId;
             if (id == null) return false;
             float today = (float)CampaignTime.Now.ToDays;
-            if (_merchantData.TryGetValue(id, out var record))
+            if (MerchantData_.TryGetValue(id, out var record))
                 return today >= record.CooldownEndDay;
             return true;
         }
@@ -91,7 +78,7 @@ namespace ArtOfTheTrade.Behaviors
         public int GetRepScore(string merchantId)
         {
             if (merchantId == null) return 0;
-            return _merchantData.TryGetValue(merchantId, out var r) ? r.RepScore : 0;
+            return MerchantData_.TryGetValue(merchantId, out var r) ? r.RepScore : 0;
         }
 
         public int GetSuccessChance(int tier)
@@ -105,7 +92,7 @@ namespace ArtOfTheTrade.Behaviors
             string merchantId = Hero.OneToOneConversationHero?.StringId
                 ?? CharacterObject.OneToOneConversationCharacter?.StringId;
             int repBonus = 0;
-            if (merchantId != null && _merchantData.TryGetValue(merchantId, out var record))
+            if (merchantId != null && MerchantData_.TryGetValue(merchantId, out var record))
                 repBonus = record.RepScore / 5;
 
             // Renown bonus (0 to +5)

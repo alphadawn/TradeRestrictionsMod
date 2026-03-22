@@ -15,16 +15,44 @@ namespace ArtOfTheTrade.Patches
 {
     internal static class CamelPatchHelper
     {
+        /// <summary>Scene name of the mission that just ended. Set by SceneTrackingMissionBehavior.</summary>
+        internal static string LastEndedSceneName = "";
+
+        internal static bool IsInteriorScene(string sceneName) =>
+            sceneName.IndexOf("tavern",    StringComparison.OrdinalIgnoreCase) >= 0 ||
+            sceneName.IndexOf("lordshall", StringComparison.OrdinalIgnoreCase) >= 0 ||
+            sceneName.IndexOf("arena",     StringComparison.OrdinalIgnoreCase) >= 0 ||
+            sceneName.IndexOf("prison",    StringComparison.OrdinalIgnoreCase) >= 0 ||
+            sceneName.IndexOf("dungeon",   StringComparison.OrdinalIgnoreCase) >= 0 ||
+            sceneName.IndexOf("interior",  StringComparison.OrdinalIgnoreCase) >= 0 ||
+            sceneName.IndexOf("keep",      StringComparison.OrdinalIgnoreCase) >= 0;
+
         internal static bool ShouldSpawnCamel()
         {
             var sceneName = Mission.Current?.SceneName ?? "";
-            if (sceneName.IndexOf("tavern", StringComparison.OrdinalIgnoreCase) >= 0 ||
-                sceneName.IndexOf("lordshall", StringComparison.OrdinalIgnoreCase) >= 0 ||
-                sceneName.IndexOf("arena", StringComparison.OrdinalIgnoreCase) >= 0)
-                return false;
+
+            // Don't spawn in interior scenes
+            if (IsInteriorScene(sceneName)) return false;
+
+            // Don't spawn if we just came from an interior (player exited tavern/keep/prison)
+            if (IsInteriorScene(LastEndedSceneName)) return false;
 
             var settlement = Settlement.CurrentSettlement;
             return settlement != null && (settlement.IsTown || settlement.IsCastle || settlement.IsVillage);
+        }
+    }
+
+    /// <summary>
+    /// Lightweight behavior added to all settlement missions. Records the scene name
+    /// when the mission ends so the camel patch knows whether the player came from an interior.
+    /// </summary>
+    public class SceneTrackingMissionBehavior : MissionBehavior
+    {
+        public override MissionBehaviorType BehaviorType => MissionBehaviorType.Other;
+
+        protected override void OnEndMission()
+        {
+            CamelPatchHelper.LastEndedSceneName = Mission.Current?.SceneName ?? "";
         }
     }
 

@@ -8,6 +8,7 @@ using TaleWorlds.CampaignSystem.CampaignBehaviors;
 using TaleWorlds.Library;
 using ArtOfTheTrade.Models;
 using ArtOfTheTrade.Missions;
+using ArtOfTheTrade.Patches;
 using ArtOfTheTrade.Save;
 using TaleWorlds.MountAndBlade;
 
@@ -20,6 +21,7 @@ namespace ArtOfTheTrade.Behaviors
         public override void RegisterEvents()
         {
             CampaignEvents.DailyTickEvent.AddNonSerializedListener(this, OnDailyTick);
+            CampaignEvents.TickEvent.AddNonSerializedListener(this, OnTick);
             CampaignEvents.OnMissionStartedEvent.AddNonSerializedListener(this, OnMissionStarted);
         }
 
@@ -32,10 +34,24 @@ namespace ArtOfTheTrade.Behaviors
 
             var settlement = TaleWorlds.CampaignSystem.Settlements.Settlement.CurrentSettlement;
             if (settlement == null) return;
+
+            // Track scene names across all settlement missions (tavern, keep, prison, town center, etc.)
+            // so the camel patch knows whether the player entered from the map or from an interior.
+            if (!m.HasMissionBehavior<SceneTrackingMissionBehavior>())
+                m.AddMissionBehavior(new SceneTrackingMissionBehavior());
+
             if (!settlement.IsTown && !settlement.IsCastle && !settlement.IsVillage) return;
 
             if (!m.HasMissionBehavior<ArtOfTheTrade.Missions.PackAnimalMissionBehavior>())
                 m.AddMissionBehavior(new ArtOfTheTrade.Missions.PackAnimalMissionBehavior());
+        }
+
+        private void OnTick(float dt)
+        {
+            // TickEvent only fires on the campaign map (campaign time pauses during missions).
+            // Clearing here ensures that if the player tabbed out of an interior back to the map,
+            // the interior-exit flag is reset before they re-enter a settlement from the menu.
+            CamelPatchHelper.LastEndedSceneName = "";
         }
 
         private void OnDailyTick()

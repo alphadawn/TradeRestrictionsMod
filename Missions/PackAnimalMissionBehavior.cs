@@ -55,6 +55,9 @@ namespace ArtOfTheTrade.Missions
                 // Interior sub-locations (keep, prison, tavern, arena, lord's hall) all have
                 // scene names containing recognisable keywords — skip them.
                 string sceneName = Mission.Current?.SceneName ?? "";
+                InformationManager.DisplayMessage(new InformationMessage(
+                    $"[AoT DEBUG] Scene: \"{sceneName}\"", Colors.Yellow));
+
                 if (sceneName.IndexOf("tavern",    System.StringComparison.OrdinalIgnoreCase) >= 0 ||
                     sceneName.IndexOf("lordshall", System.StringComparison.OrdinalIgnoreCase) >= 0 ||
                     sceneName.IndexOf("arena",     System.StringComparison.OrdinalIgnoreCase) >= 0 ||
@@ -62,7 +65,11 @@ namespace ArtOfTheTrade.Missions
                     sceneName.IndexOf("dungeon",   System.StringComparison.OrdinalIgnoreCase) >= 0 ||
                     sceneName.IndexOf("interior",  System.StringComparison.OrdinalIgnoreCase) >= 0 ||
                     sceneName.IndexOf("keep",      System.StringComparison.OrdinalIgnoreCase) >= 0)
+                {
+                    InformationManager.DisplayMessage(new InformationMessage(
+                        $"[AoT DEBUG] Blocked by filter — no spawn.", Colors.Yellow));
                     return;
+                }
 
                 var player = Agent.Main;
                 if (player == null) return;

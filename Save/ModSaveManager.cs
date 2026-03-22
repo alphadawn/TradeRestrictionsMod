@@ -74,6 +74,11 @@ namespace ArtOfTheTrade.Save
         /// </summary>
         public static void Save(IDataStore dataStore)
         {
+            // On a brand-new game Load() may never have been called — generate GUID now so
+            // the first save event still produces a valid JSON file.
+            if (string.IsNullOrEmpty(_campaignGuid))
+                _campaignGuid = Guid.NewGuid().ToString("N");
+
             dataStore.SyncData("ArtOfTheTrade_CampaignGuid", ref _campaignGuid);
             WriteToFile();
         }

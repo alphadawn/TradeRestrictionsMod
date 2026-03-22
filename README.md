@@ -280,6 +280,11 @@ All mod data is stored in a per-campaign JSON file on disk rather than inside th
 
 ## Key APIs Reference
 
+### use this to get all the scenes
+```csharp
+powershell -Command "Get-Content 'C:/Program Files (x86)/Steam/steamapps/common/Mount & Blade II Bannerlord/Modules/SandBox/ModuleData/settlements.xml'" 2>&1 | Select-String -Pattern 'scene_name|lordshall|prison' | Select-Object -First 30
+```
+
 ### Dialog System
 ```csharp
 // Add a player dialog line

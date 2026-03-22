@@ -8,13 +8,14 @@ using TaleWorlds.CampaignSystem.CampaignBehaviors;
 using TaleWorlds.Library;
 using ArtOfTheTrade.Models;
 using ArtOfTheTrade.Missions;
+using ArtOfTheTrade.Save;
 using TaleWorlds.MountAndBlade;
 
 namespace ArtOfTheTrade.Behaviors
 {
     public class TradeRestrictionBehavior : CampaignBehaviorBase
     {
-        private List<TradeCertificate> _certificates = new List<TradeCertificate>();
+        private List<TradeCertificate> _certificates => ModSaveManager.Data.Certificates;
 
         public override void RegisterEvents()
         {
@@ -22,21 +23,7 @@ namespace ArtOfTheTrade.Behaviors
             CampaignEvents.OnMissionStartedEvent.AddNonSerializedListener(this, OnMissionStarted);
         }
 
-        public override void SyncData(IDataStore dataStore)
-        {
-            if (dataStore.IsSaving)
-            {
-                var json = Newtonsoft.Json.JsonConvert.SerializeObject(_certificates);
-                dataStore.SyncData("ArtOfTheTrade_Certificates", ref json);
-            }
-            if (dataStore.IsLoading)
-            {
-                var json = "";
-                if (dataStore.SyncData("ArtOfTheTrade_Certificates", ref json) && !string.IsNullOrEmpty(json))
-                    _certificates = Newtonsoft.Json.JsonConvert.DeserializeObject<System.Collections.Generic.List<ArtOfTheTrade.Models.TradeCertificate>>(json)
-                        ?? new System.Collections.Generic.List<ArtOfTheTrade.Models.TradeCertificate>();
-            }
-        }
+        public override void SyncData(IDataStore dataStore) { /* handled by ModDataBehavior */ }
 
         private void OnMissionStarted(IMission mission)
         {

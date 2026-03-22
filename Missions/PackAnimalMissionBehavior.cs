@@ -51,10 +51,17 @@ namespace ArtOfTheTrade.Missions
                 if (_spawned) return;
                 _spawned = true;
 
+                // Only spawn in the outdoor town/castle centre.
+                // Interior sub-locations (keep, prison, tavern, arena, lord's hall) all have
+                // scene names containing recognisable keywords — skip them.
                 string sceneName = Mission.Current?.SceneName ?? "";
                 if (sceneName.IndexOf("tavern",    System.StringComparison.OrdinalIgnoreCase) >= 0 ||
                     sceneName.IndexOf("lordshall", System.StringComparison.OrdinalIgnoreCase) >= 0 ||
-                    sceneName.IndexOf("arena",     System.StringComparison.OrdinalIgnoreCase) >= 0)
+                    sceneName.IndexOf("arena",     System.StringComparison.OrdinalIgnoreCase) >= 0 ||
+                    sceneName.IndexOf("prison",    System.StringComparison.OrdinalIgnoreCase) >= 0 ||
+                    sceneName.IndexOf("dungeon",   System.StringComparison.OrdinalIgnoreCase) >= 0 ||
+                    sceneName.IndexOf("interior",  System.StringComparison.OrdinalIgnoreCase) >= 0 ||
+                    sceneName.IndexOf("keep",      System.StringComparison.OrdinalIgnoreCase) >= 0)
                     return;
 
                 var player = Agent.Main;

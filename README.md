@@ -138,7 +138,7 @@ sold manually, corresponding hands are removed.
 Outfits randomized on hire (index 0–2 stored in `CaravanHand.OutfitIndex`).
 Spawn positions: right, behind-right, behind-left, far-right, far-left relative to player frame.
 
-**Skipped scenes:** tavern, lordshall, arena (checked via `Mission.Current.SceneName`).
+**Skipped scenes:** Checked via `Mission.Current.SceneName` keyword search. Spawning is skipped when the scene name contains any of: `tavern`, `lordshall`, `arena`, `prison`, `dungeon`, `interior`, `keep`. Outdoor town/castle centre scenes never contain these keywords, so hands only appear on the streets and in castle courtyards.
 
 **On player capture:** `DismissAll()` is called by `CapturePenaltyBehavior` before inventory seizure. All animal items are removed from the roster first (so they are not transferred to the captor), and the `_hands` list is cleared. No gold refund.
 
@@ -241,6 +241,40 @@ Player options: **Accept** (receive gold equivalent via `ApplyRecovery`, claim c
 - `_itemValueTaken` — total `item.Value * count` of seized items (used for recovery offer calculation)
 - `_gracePeriodCaptorId` — StringId of the lord who just gave a mercy/low-tier release
 - `_gracePeriodEndsDay` — campaign day when the grace period expires (set to `today + 1.0`)
+
+---
+
+### 10. External Save System (`Save/ModSaveData.cs`, `Save/ModSaveManager.cs`, `Behaviors/ModDataBehavior.cs`)
+All mod data is stored in a per-campaign JSON file on disk rather than inside the game's native `.sav` file. This eliminates save corruption from Newtonsoft.Json serialisation errors inside `IDataStore`.
+
+**Files saved to:**
+`Documents/Mount and Blade II Bannerlord/ArtOfTradeSaves/aot_{guid}.json`
+
+**GUID lifecycle:**
+| Situation | Result |
+|-----------|--------|
+| New campaign | GUID generated once via `Guid.NewGuid()`, stored in `.sav`, JSON created |
+| Same campaign, any save slot | Same GUID written to every slot → same JSON overwritten |
+| Autosave | Identical to manual save — fires same `SyncData(IsSaving)` path |
+| Mod added to existing save (no GUID present) | New GUID generated → new JSON, as if a fresh start |
+| Second campaign | Different `.sav` → different GUID → different JSON, both files coexist |
+
+**Important:** All save slots of the same playthrough share one GUID and one JSON. If you reload an older slot, the JSON it reads reflects the **most recent** session, not the state when that slot was created. This is a known tradeoff of external saves — rolling back a slot does not roll back mod data.
+
+**Architecture:**
+- `ModDataBehavior` is registered **first** in `SubModule`. Its `SyncData` is the only place `IDataStore` is touched (read/write of the GUID string). All other behaviors have empty `SyncData`.
+- All other behaviors access their persistent data via `ModSaveManager.Data.*` properties directly — mutations are live in memory immediately and flushed to JSON on the next save event.
+- `ModSaveManager.WriteToFile()` can also be called at any point for an immediate flush (e.g. after a significant state change).
+
+**Data contained in `ModSaveData`:**
+| Field | Owner |
+|-------|-------|
+| `CaravanHands` | `CaravanHandBehavior` |
+| `MerchantData` | `HaggleBehavior` |
+| `LastCaptorId`, `GoldTaken`, `ItemValueTaken`, `GracePeriodCaptorId`, `GracePeriodEndsDay` | `CapturePenaltyBehavior` |
+| `Certificates` | `TradeRestrictionBehavior` |
+| `Stashes` | `StashBehavior` |
+| `LastIntelDay` | `MarketIntelDialogBehavior` |
 
 ---
 

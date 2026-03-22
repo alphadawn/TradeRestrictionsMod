@@ -295,7 +295,7 @@ All mod data is stored in a per-campaign JSON file on disk rather than inside th
 All unique settlement scene names (from `SandBox/ModuleData/settlements.xml`) are saved to:
 `Documents/TradeRestrictionsMod/bannerlord_scene_names.json`
 
-To regenerate, run: `powershell.exe -ExecutionPolicy Bypass -File "C:/Users/Ibrahim/Documents/TradeRestrictionsMod/extract_scenes.ps1"`
+To regenerate, run: `powershell.exe -ExecutionPolicy Bypass -File "C:/Users/{your username}/Documents/TradeRestrictionsMod/extract_scenes.ps1"`
 
 ### Dialog System
 ```csharp

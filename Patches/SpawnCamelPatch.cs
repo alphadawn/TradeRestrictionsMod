@@ -10,6 +10,7 @@ using TaleWorlds.Core;
 using TaleWorlds.Engine;
 using TaleWorlds.MountAndBlade;
 using TaleWorlds.ObjectSystem;
+using ArtOfTheTrade.Settings;
 
 namespace ArtOfTheTrade.Patches
 {
@@ -80,7 +81,9 @@ namespace ArtOfTheTrade.Patches
         static void Prefix(ref bool noHorses, bool civilianEquipment)
         {
             _active = false;
-            if (!civilianEquipment || !CamelPatchHelper.ShouldSpawnCamel()) return;
+            if (!civilianEquipment) return;
+            if (!(ArtOfTradeSettings.Instance?.SpawnPlayerCamel ?? true)) return;
+            if (!CamelPatchHelper.ShouldSpawnCamel()) return;
 
             var hero = Hero.MainHero;
             if (hero == null) return;
@@ -123,6 +126,7 @@ namespace ArtOfTheTrade.Patches
 
         static void Prefix(LocationCharacter locationCharacter, ref bool noHorses)
         {
+            if (!(ArtOfTradeSettings.Instance?.SpawnCompanionCamels ?? true)) return;
             if (!CamelPatchHelper.ShouldSpawnCamel()) return;
             if (!locationCharacter.UseCivilianEquipment) return;
 

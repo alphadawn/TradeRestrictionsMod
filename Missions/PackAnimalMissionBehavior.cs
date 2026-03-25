@@ -13,6 +13,7 @@ using TaleWorlds.ObjectSystem;
 using ArtOfTheTrade.Behaviors;
 using ArtOfTheTrade.Models;
 using ArtOfTheTrade.Patches;
+using ArtOfTheTrade.Settings;
 
 namespace ArtOfTheTrade.Missions
 {
@@ -68,6 +69,10 @@ namespace ArtOfTheTrade.Missions
             {
                 if (_spawned) return;
                 _spawned = true;
+
+                var settings = ArtOfTradeSettings.Instance;
+                if (!(settings?.EnableCaravanHands ?? true)) return;
+                if (!(settings?.SpawnHandlersInSettlements ?? true)) return;
 
                 // Only spawn in the outdoor town/castle centre.
                 // Interior sub-locations (keep, prison, tavern, arena, lord's hall) all have

@@ -7,14 +7,15 @@ using TaleWorlds.Core;
 using TaleWorlds.Library;
 using TaleWorlds.Localization;
 using ArtOfTheTrade.Save;
+using ArtOfTheTrade.Settings;
 
 namespace ArtOfTheTrade.Dialogs
 {
     public class MarketIntelDialogBehavior : CampaignBehaviorBase
     {
-        private const int IntelCost = 50;
-        private const float NearbyRadius = 150f;
-        private const float CooldownDays = 3f;
+        private int IntelCost    => ArtOfTradeSettings.Instance?.MarketIntelCost      ?? 50;
+        private float NearbyRadius => ArtOfTradeSettings.Instance?.MarketIntelRadius  ?? 150f;
+        private float CooldownDays => ArtOfTradeSettings.Instance?.MarketIntelCooldown ?? 3f;
 
         private Dictionary<string, float> _lastIntelDay => ModSaveManager.Data.LastIntelDay;
         private string _lastTip = null;
@@ -76,7 +77,8 @@ namespace ArtOfTheTrade.Dialogs
 
         private bool IsTavernkeeper()
         {
-            return CharacterObject.OneToOneConversationCharacter?.Occupation == Occupation.Tavernkeeper;
+            return (ArtOfTradeSettings.Instance?.EnableMarketIntel ?? true)
+                && CharacterObject.OneToOneConversationCharacter?.Occupation == Occupation.Tavernkeeper;
         }
 
         private bool IsOnCooldown()

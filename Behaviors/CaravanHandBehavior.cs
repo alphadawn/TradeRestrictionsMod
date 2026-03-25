@@ -8,6 +8,7 @@ using TaleWorlds.Library;
 using TaleWorlds.ObjectSystem;
 using ArtOfTheTrade.Models;
 using ArtOfTheTrade.Save;
+using ArtOfTheTrade.Settings;
 
 namespace ArtOfTheTrade.Behaviors
 {
@@ -23,8 +24,9 @@ namespace ArtOfTheTrade.Behaviors
         {
             get
             {
+                int cap = ArtOfTradeSettings.Instance?.MaxCaravanHands ?? 5;
                 int partySize = MobileParty.MainParty?.MemberRoster?.TotalManCount ?? 0;
-                return System.Math.Min(5, partySize / 10);
+                return System.Math.Min(cap, partySize / 10);
             }
         }
 
@@ -81,10 +83,17 @@ namespace ArtOfTheTrade.Behaviors
 
         public bool TryHire(CaravanAnimalType type)
         {
-            if (Hands_.Count >= 5)
+            if (!(ArtOfTradeSettings.Instance?.EnableCaravanHands ?? true))
             {
                 InformationManager.DisplayMessage(new InformationMessage(
-                    "You cannot have more than 5 caravan hands.", Colors.Red));
+                    "Caravan hands are disabled in the mod settings.", Colors.Red));
+                return false;
+            }
+            int cap = ArtOfTradeSettings.Instance?.MaxCaravanHands ?? 5;
+            if (Hands_.Count >= cap)
+            {
+                InformationManager.DisplayMessage(new InformationMessage(
+                    $"You cannot have more than {cap} caravan hands.", Colors.Red));
                 return false;
             }
             if (Hands_.Count >= MaxAllowed)
@@ -198,6 +207,8 @@ namespace ArtOfTheTrade.Behaviors
             InformationManager.DisplayMessage(new InformationMessage(
                 $"Your {total} caravan hand(s) scattered when you were captured.", Colors.Yellow));
         }
+
+        public static bool IsEnabled => ArtOfTradeSettings.Instance?.EnableCaravanHands ?? true;
 
         public static CaravanHandBehavior Current =>
             Campaign.Current?.GetCampaignBehavior<CaravanHandBehavior>();

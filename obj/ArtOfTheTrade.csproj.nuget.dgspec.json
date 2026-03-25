@@ -44,6 +44,10 @@
         "net472": {
           "targetAlias": "net472",
           "dependencies": {
+            "Bannerlord.MCM": {
+              "target": "Package",
+              "version": "[5.10.2, )"
+            },
             "Lib.Harmony": {
               "target": "Package",
               "version": "[2.3.3, )"

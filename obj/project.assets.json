@@ -2,6 +2,35 @@
   "version": 3,
   "targets": {
     ".NETFramework,Version=v4.7.2": {
+      "Bannerlord.Lib.Harmony/2.2.2": {
+        "type": "package",
+        "compile": {
+          "ref/netstandard2.0/0Harmony.dll": {
+            "related": ".xml"
+          }
+        },
+        "runtime": {
+          "lib/net472/_._": {
+            "related": ".xml"
+          }
+        }
+      },
+      "Bannerlord.MCM/5.10.2": {
+        "type": "package",
+        "dependencies": {
+          "Bannerlord.Lib.Harmony": "2.2.2"
+        },
+        "compile": {
+          "lib/netstandard2.0/MCMv5.dll": {
+            "related": ".pdb"
+          }
+        },
+        "runtime": {
+          "lib/netstandard2.0/MCMv5.dll": {
+            "related": ".pdb"
+          }
+        }
+      },
       "Lib.Harmony/2.3.3": {
         "type": "package",
         "compile": {
@@ -30,6 +59,39 @@
     }
   },
   "libraries": {
+    "Bannerlord.Lib.Harmony/2.2.2": {
+      "sha512": "0eV+vbwm204jepvVgSv+4aoaUH1qymOOrbmTDk5zfZ9AUUk4tj+y7ZvZV4tJMttRhQMAqxOob2aXOyeh7wxS2A==",
+      "type": "package",
+      "path": "bannerlord.lib.harmony/2.2.2",
+      "files": [
+        ".nupkg.metadata",
+        ".signature.p7s",
+        "HarmonyLogo.png",
+        "LICENSE",
+        "bannerlord.lib.harmony.2.2.2.nupkg.sha512",
+        "bannerlord.lib.harmony.nuspec",
+        "lib/net472/0Harmony.dll",
+        "lib/net472/0Harmony.xml",
+        "lib/netcoreapp3.1/0Harmony.dll",
+        "lib/netcoreapp3.1/0Harmony.xml",
+        "ref/netstandard2.0/0Harmony.dll",
+        "ref/netstandard2.0/0Harmony.xml"
+      ]
+    },
+    "Bannerlord.MCM/5.10.2": {
+      "sha512": "ixcs2g1Z5rF2EcOil6Op2onUEapUMW2hTROEDG5NwASrbTZwE/SMRYxVNKPtbnCOgFtuVWgzK7ciFvs8Bqz7Yw==",
+      "type": "package",
+      "path": "bannerlord.mcm/5.10.2",
+      "files": [
+        ".nupkg.metadata",
+        ".signature.p7s",
+        "MCM-128-w-2.png",
+        "bannerlord.mcm.5.10.2.nupkg.sha512",
+        "bannerlord.mcm.nuspec",
+        "lib/netstandard2.0/MCMv5.dll",
+        "lib/netstandard2.0/MCMv5.pdb"
+      ]
+    },
     "Lib.Harmony/2.3.3": {
       "sha512": "qxO8d2q7luoY8mTfCStQFOgRSd3dWZSS0Ffi5nrjX4qFkZxEBAEvNh5b/ZejTl2kY0fJs62LmfRJkBBTeiuuyQ==",
       "type": "package",
@@ -469,6 +531,7 @@
   },
   "projectFileDependencyGroups": {
     ".NETFramework,Version=v4.7.2": [
+      "Bannerlord.MCM >= 5.10.2",
       "Lib.Harmony >= 2.3.3",
       "Microsoft.NETFramework.ReferenceAssemblies >= 1.0.3"
     ]
@@ -516,6 +579,10 @@
       "net472": {
         "targetAlias": "net472",
         "dependencies": {
+          "Bannerlord.MCM": {
+            "target": "Package",
+            "version": "[5.10.2, )"
+          },
           "Lib.Harmony": {
             "target": "Package",
             "version": "[2.3.3, )"

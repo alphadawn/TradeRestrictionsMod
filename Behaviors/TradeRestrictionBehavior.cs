@@ -10,6 +10,7 @@ using ArtOfTheTrade.Models;
 using ArtOfTheTrade.Missions;
 using ArtOfTheTrade.Patches;
 using ArtOfTheTrade.Save;
+using ArtOfTheTrade.Settings;
 using TaleWorlds.MountAndBlade;
 
 namespace ArtOfTheTrade.Behaviors
@@ -68,6 +69,10 @@ namespace ArtOfTheTrade.Behaviors
             // Same faction always allowed
             if (player.MapFaction == townFaction) return true;
 
+            // Owning a workshop in the town grants free access (no certificate needed)
+            if ((ArtOfTradeSettings.Instance?.FreeTradeIfWorkshop ?? true)
+                && town.Workshops.Any(w => w.Owner == player)) return true;
+
             // Has a valid certificate
             if (HasValidCertificate(town)) return true;
 
@@ -89,7 +94,7 @@ namespace ArtOfTheTrade.Behaviors
 
             if (kingdomA == null || kingdomB == null) return false;
 
-            return tradeAgreements.HasTradeAgreement(kingdomA, kingdomB);
+            return tradeAgreements.HasTradeAgreement(kingdomA, kingdomB, out _);
         }
 
         public bool HasValidCertificate(Town town)
@@ -127,6 +132,38 @@ namespace ArtOfTheTrade.Behaviors
             string duration = durationInDays >= 84f ? "1 year" : durationInDays >= 42f ? "6 months" : durationInDays >= 7f ? "1 week" : "3 days";
             InformationManager.DisplayMessage(new InformationMessage(
                 $"Certificate purchased for {town.Name}. Valid for {duration}."));
+        }
+
+        // Buys a single bundled certificate covering multiple towns (ruling-clan all-towns deal).
+        // Charges the combined price once, then grants a certificate for every town that
+        // doesn't already hold a valid one.
+        public void TryBuyCertificatesForTowns(IList<Town> towns, int totalPrice, float durationInDays)
+        {
+            var player = Hero.MainHero;
+            if (towns == null || towns.Count == 0) return;
+
+            if (player.Gold < totalPrice)
+            {
+                InformationManager.DisplayMessage(new InformationMessage(
+                    $"You need {totalPrice} gold for this certificate."));
+                return;
+            }
+
+            // Pay the combined price once, to the settlement the player is currently at.
+            var payTo = (Settlement.CurrentSettlement ?? towns[0].Settlement);
+            GiveGoldAction.ApplyForCharacterToSettlement(player, payTo, totalPrice);
+
+            float today = (float)CampaignTime.Now.ToDays;
+            int granted = 0;
+            foreach (var town in towns)
+            {
+                if (HasValidCertificate(town)) continue;
+                _certificates.Add(new TradeCertificate(town, today, durationInDays));
+                granted++;
+            }
+
+            InformationManager.DisplayMessage(new InformationMessage(
+                $"Certificate purchased covering {granted} town(s). Valid for 1 year."));
         }
 
         public static TradeRestrictionBehavior Current =>

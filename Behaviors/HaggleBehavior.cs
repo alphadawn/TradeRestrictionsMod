@@ -66,6 +66,24 @@ namespace ArtOfTheTrade.Behaviors
             _currentTier = 0;
         }
 
+        // Builds a unique id for the current conversation merchant.
+        // Hero merchants (e.g. village notables) already have a globally-unique StringId.
+        // Generic town traders (weaponsmith, armorer, goods trader, horse merchant) are
+        // shared CharacterObject templates — the SAME StringId in every town — so we must
+        // qualify them with the current settlement, otherwise a cooldown at one town's
+        // weaponsmith would lock out every weaponsmith everywhere.
+        public static string GetConversationMerchantId()
+        {
+            var hero = Hero.OneToOneConversationHero;
+            if (hero != null) return hero.StringId;
+
+            var character = CharacterObject.OneToOneConversationCharacter;
+            if (character == null) return null;
+
+            string settlementId = Settlement.CurrentSettlement?.StringId ?? "";
+            return settlementId + ":" + character.StringId;
+        }
+
         public bool CanHaggleWith(Hero merchant, string characterId = null)
         {
             string id = characterId ?? merchant?.StringId;
@@ -90,8 +108,7 @@ namespace ArtOfTheTrade.Behaviors
             int skillBonus = (int)((trade + charm) / 2f / 300f * 25f);
 
             // Rep bonus from current conversation target (±10)
-            string merchantId = Hero.OneToOneConversationHero?.StringId
-                ?? CharacterObject.OneToOneConversationCharacter?.StringId;
+            string merchantId = GetConversationMerchantId();
             int repBonus = 0;
             if (merchantId != null && MerchantData_.TryGetValue(merchantId, out var record))
                 repBonus = record.RepScore / 5;

@@ -6,6 +6,12 @@ certificates, haggling, caravan hands, and market intelligence.
 
 Assembly: `ArtOfTheTrade.dll` | Namespace: `ArtOfTheTrade`
 
+### MCM Configuration (`Settings/ArtOfTradeSettings.cs`)
+All in-game options are exposed through MCM (`AttributeGlobalSettings<ArtOfTradeSettings>`).
+Settings persist to `Documents/Mount and Blade II Bannerlord/Configs/ModSettings/Global/ArtOfTheTrade/ArtOfTheTrade_v1.json`.
+
+> **Important:** the class **must** override `FormatType => "json2"`. Without a valid serializer format MCM shows the menu but silently fails to write the config file, so every setting resets to default on reload.
+
 ---
 
 ## Features
@@ -15,6 +21,7 @@ Trading at a foreign town applies penalties unless the player has access.
 
 **Access is granted when:**
 - Player's faction owns the town (same MapFaction)
+- Player owns a workshop in the town (toggle: `FreeTradeIfWorkshop`, default on)
 - Player's kingdom has a trade agreement with the town's kingdom (vanilla diplomacy)
 - Player holds a valid trade certificate for that town
 
@@ -30,15 +37,20 @@ then applies modifiers to `ref int __result`.
 ---
 
 ### 2. Trade Certificates (`Dialogs/CertificateDialogBehavior.cs`, `Models/TradeCertificate.cs`)
-Three tiers of certificates grant trading access for a duration.
+Several tiers of certificates grant trading access for a duration.
 
 | Tier | Source | Duration | Price |
 |------|--------|----------|-------|
-| 3-day pass | Town traders (GoodsTrader, Weaponsmith, etc.) | 3 days | 200–500g (prosperity-scaled) |
+| 3-day pass | Town traders (GoodsTrader, Weaponsmith, etc.) | 3 days | 400–1000g (prosperity-scaled) |
 | 6-month permit | Merchant notables | 42 days | Mid (prosperity-scaled) |
 | 1-year certificate | Ruling clan member | 84 days | High (prosperity-scaled) |
+| 1-year all-towns certificate | Ruling clan member (clan owns 2+ towns) | 84 days | Sum of each town's 1-year price − bulk discount |
 
-**Certificate price formula:** `2000 + (prosperity / 8000) * 8000` gold. Merchant tier is 1.5x.
+**Certificate price formula:** `2000 + (prosperity / 8000) * 8000` gold. Merchant tier is 1.5x. 3-day pass: `400 + (prosperity / 8000) * 600`.
+
+**All-towns certificate:** Offered by a ruling clan member only when their clan holds 2+ towns. Grants a 1-year certificate for **every** town the clan owns in one purchase. Price = sum of each town's individual 1-year price, reduced by the `AllTownsCertBulkDiscountPct` MCM setting (default 30%). Charged once; certificates are added via `TradeRestrictionBehavior.TryBuyCertificatesForTowns`.
+
+**No certificate needed:** Towns where the player owns a workshop are freely tradeable (see Feature 1) and the certificate-purchase dialog options are hidden there.
 
 **Revocation:** Certificate is automatically invalid if player's faction is at war with the town's faction.
 
@@ -96,8 +108,9 @@ Multi-round price negotiation with traders and village notables.
 **Cooldowns stored per-merchant** in `MerchantRecord.CooldownEndDay` (days since campaign start).
 
 **isSelling semantics in TradePatch:**
-`isSelling = true` means the MERCHANT is selling (player is BUYING) → apply `BuyModifier`.
-`isSelling = false` means the merchant is buying (player is SELLING) → apply `SellModifier`.
+`isSelling = true` means the PLAYER is selling → apply `SellModifier` (1 + discount, player earns more).
+`isSelling = false` means the PLAYER is buying → apply `BuyModifier` (1 − discount, player pays less).
+(This was previously inverted, which made a successful haggle *raise* buy prices instead of lowering them.)
 
 **XP awards:**
 - Attempting: +15 Trade, +5 Charm

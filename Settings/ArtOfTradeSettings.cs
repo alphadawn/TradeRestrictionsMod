@@ -9,6 +9,7 @@ namespace ArtOfTheTrade.Settings
         public override string Id          => "ArtOfTheTrade_v1";
         public override string DisplayName => "Art of the Trade";
         public override string FolderName  => "ArtOfTheTrade";
+        public override string FormatType  => "json2";
 
         // ── 1. Trade Restrictions ─────────────────────────────────────────────
 
@@ -26,6 +27,16 @@ namespace ArtOfTheTrade.Settings
             HintText = "Price multiplier when selling at a restricted town without access. Default: 0.5×.")]
         [SettingPropertyGroup("1. Trade Restrictions", GroupOrder = 1)]
         public float SellPenaltyMultiplier { get; set; } = 0.5f;
+
+        [SettingPropertyBool("Free Trade if Workshop", Order = 3, RequireRestart = false,
+            HintText = "No certificate needed and no trade penalty at towns where you own a workshop.")]
+        [SettingPropertyGroup("1. Trade Restrictions", GroupOrder = 1)]
+        public bool FreeTradeIfWorkshop { get; set; } = true;
+
+        [SettingPropertyInteger("All-Towns Certificate Bulk Discount (%)", 0, 75, Order = 4, RequireRestart = false,
+            HintText = "Discount applied to the combined price when buying a single certificate covering every town a ruling clan holds. Default: 30.")]
+        [SettingPropertyGroup("1. Trade Restrictions", GroupOrder = 1)]
+        public int AllTownsCertBulkDiscountPct { get; set; } = 30;
 
         // ── 2. Haggle ─────────────────────────────────────────────────────────
 

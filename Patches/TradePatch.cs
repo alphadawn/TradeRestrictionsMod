@@ -75,15 +75,15 @@ namespace ArtOfTheTrade.Patches
                 }
 
                 // Apply haggle modifier — towns and villages
-                // isSelling = true means the merchant/settlement is selling (player is BUYING)
-                // isSelling = false means the merchant/settlement is buying (player is SELLING)
+                // isSelling = true means the PLAYER is selling → apply SellModifier (1 + discount)
+                // isSelling = false means the PLAYER is buying → apply BuyModifier (1 - discount)
                 var haggle = HaggleBehavior.Current;
                 if (haggle != null)
                 {
-                    if (isSelling && haggle.BuyModifier != 1f)
-                        __result = (int)(__result * haggle.BuyModifier);
-                    else if (!isSelling && haggle.SellModifier != 1f)
+                    if (isSelling && haggle.SellModifier != 1f)
                         __result = (int)(__result * haggle.SellModifier);
+                    else if (!isSelling && haggle.BuyModifier != 1f)
+                        __result = (int)(__result * haggle.BuyModifier);
                 }
             }
             catch { }

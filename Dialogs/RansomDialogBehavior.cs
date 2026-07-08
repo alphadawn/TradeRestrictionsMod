@@ -6,6 +6,7 @@ using TaleWorlds.Core;
 using TaleWorlds.Library;
 using TaleWorlds.Localization;
 using ArtOfTheTrade.Behaviors;
+using ArtOfTheTrade.Settings;
 
 namespace ArtOfTheTrade.Dialogs
 {
@@ -47,6 +48,7 @@ namespace ArtOfTheTrade.Dialogs
                 "Offer payment for safe passage.",
                 args =>
                 {
+                    if (!(ArtOfTradeSettings.Instance?.EnableSafePassageOffer ?? true)) return false;
                     var leader = GetEncounteredLeader();
                     if (leader == null || leader.Clan == null || leader.Clan.IsMinorFaction) return false;
                     if (Hero.MainHero.Gold < 100) return false;
@@ -69,6 +71,7 @@ namespace ArtOfTheTrade.Dialogs
                 "Return what you took from me, or face the consequences.",
                 args =>
                 {
+                    if (!(ArtOfTradeSettings.Instance?.EnableDemandGoodsBack ?? true)) return false;
                     var leader = GetEncounteredLeader();
                     if (leader == null) return false;
                     if (CapturePenaltyBehavior.Current?.HasPendingClaimAgainst(leader) != true) return false;

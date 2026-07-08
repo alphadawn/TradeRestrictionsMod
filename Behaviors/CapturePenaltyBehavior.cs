@@ -7,6 +7,7 @@ using TaleWorlds.CampaignSystem.Party;
 using TaleWorlds.Core;
 using TaleWorlds.Library;
 using ArtOfTheTrade.Save;
+using ArtOfTheTrade.Settings;
 
 namespace ArtOfTheTrade.Behaviors
 {
@@ -74,6 +75,9 @@ namespace ArtOfTheTrade.Behaviors
         {
             if (prisoner != Hero.MainHero) return;
 
+            var settings = ArtOfTradeSettings.Instance;
+            if (!(settings?.EnableCapturePenalty ?? true)) return;
+
             var captorHero = capturer?.LeaderHero;
             float today = (float)CampaignTime.Now.ToDays;
 
@@ -100,11 +104,12 @@ namespace ArtOfTheTrade.Behaviors
             {
                 int mercy = captorHero.GetTraitLevel(DefaultTraits.Mercy);
 
-                if (mercy > 0)
+                if ((settings?.EnableMercyRelease ?? true) && mercy > 0)
                 {
                     // Merciful lord: releases without taking anything
+                    float graceDays = settings?.GracePeriodDays ?? 1f;
                     GracePeriodCaptor  = captorHero.StringId;
-                    GracePeriodEndsDay = today + 1.0f;
+                    GracePeriodEndsDay = today + graceDays;
                     LastCaptorId       = null;
                     GoldTakenVal       = 0;
                     ItemValueTakenVal  = 0;
@@ -116,8 +121,9 @@ namespace ArtOfTheTrade.Behaviors
                 }
                 else
                 {
-                    // No mercy, but recognises you're small — takes only 25% of gold, leaves items
-                    int taken = Math.Max(0, playerGold / 4);
+                    // No mercy — takes a percentage of gold only, leaves items
+                    float pct = (settings?.LowTierGoldPenaltyPct ?? 25) / 100f;
+                    int taken = (settings?.LordsTakeGold ?? true) ? Math.Max(0, (int)(playerGold * pct)) : 0;
                     LastCaptorId      = captorHero.StringId;
                     GoldTakenVal      = taken;
                     ItemValueTakenVal = 0;
@@ -141,11 +147,12 @@ namespace ArtOfTheTrade.Behaviors
 
             // ── Full penalty (normal clan tier or bandits) ──────────────────
             LastCaptorId      = captorHero?.StringId;
-            GoldTakenVal      = playerGold;
+            GoldTakenVal      = 0;
             ItemValueTakenVal = 0;
 
-            if (playerGold > 0)
+            if ((settings?.LordsTakeGold ?? true) && playerGold > 0)
             {
+                GoldTakenVal = playerGold;
                 if (captorHero != null)
                 {
                     GiveGoldAction.ApplyBetweenCharacters(prisoner, captorHero, playerGold);
@@ -161,6 +168,8 @@ namespace ArtOfTheTrade.Behaviors
             }
 
             // Seize inventory (stash gold is safe — it's not in ItemRoster or Hero.Gold)
+            if (!(settings?.LordsTakeInventory ?? true)) return;
+
             var playerRoster = MobileParty.MainParty?.ItemRoster;
             if (playerRoster == null || playerRoster.Count == 0) return;
 

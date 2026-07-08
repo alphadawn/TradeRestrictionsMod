@@ -6,6 +6,7 @@ using TaleWorlds.CampaignSystem.Settlements;
 using TaleWorlds.Library;
 using TaleWorlds.Localization;
 using ArtOfTheTrade.Behaviors;
+using ArtOfTheTrade.Settings;
 
 namespace ArtOfTheTrade.Dialogs
 {
@@ -63,7 +64,7 @@ namespace ArtOfTheTrade.Dialogs
                 SetSafeText,
                 () => HaggleBehavior.Current?.AttemptHaggle(
                     Hero.OneToOneConversationHero ?? CharacterObject.OneToOneConversationCharacter?.HeroObject,
-                    0, CharacterObject.OneToOneConversationCharacter?.StringId)
+                    0, HaggleBehavior.GetConversationMerchantId())
             );
 
             starter.AddPlayerLine(
@@ -72,7 +73,7 @@ namespace ArtOfTheTrade.Dialogs
                 SetModerateText,
                 () => HaggleBehavior.Current?.AttemptHaggle(
                     Hero.OneToOneConversationHero ?? CharacterObject.OneToOneConversationCharacter?.HeroObject,
-                    1, CharacterObject.OneToOneConversationCharacter?.StringId)
+                    1, HaggleBehavior.GetConversationMerchantId())
             );
 
             starter.AddPlayerLine(
@@ -81,7 +82,7 @@ namespace ArtOfTheTrade.Dialogs
                 SetBoldText,
                 () => HaggleBehavior.Current?.AttemptHaggle(
                     Hero.OneToOneConversationHero ?? CharacterObject.OneToOneConversationCharacter?.HeroObject,
-                    2, CharacterObject.OneToOneConversationCharacter?.StringId)
+                    2, HaggleBehavior.GetConversationMerchantId())
             );
 
             starter.AddPlayerLine(
@@ -151,7 +152,7 @@ namespace ArtOfTheTrade.Dialogs
             if (!isTrader) return false;
 
             var npc = Hero.OneToOneConversationHero ?? character.HeroObject;
-            string charId = npc?.StringId ?? character.StringId;
+            string charId = HaggleBehavior.GetConversationMerchantId();
             if (charId == null) return false;
             return HaggleBehavior.Current?.CanHaggleWith(npc, charId) ?? false;
         }
@@ -186,7 +187,7 @@ namespace ArtOfTheTrade.Dialogs
         private bool SetSafeText()
         {
             int chance = HaggleBehavior.Current?.GetSuccessChance(0) ?? 70;
-            var merchantId = Hero.OneToOneConversationHero?.StringId ?? CharacterObject.OneToOneConversationCharacter?.StringId;
+            var merchantId = HaggleBehavior.GetConversationMerchantId();
             int rep = HaggleBehavior.Current?.GetRepScore(merchantId) ?? 0;
             string repTag = rep > 0 ? $", Rep +{rep}" : rep < 0 ? $", Rep {rep}" : "";
             MBTextManager.SetTextVariable("HAGGLE_SAFE_TEXT",
@@ -262,6 +263,35 @@ namespace ArtOfTheTrade.Dialogs
             starter.AddDialogLine(
                 "trade_cert_clan_bought", "trade_cert_clan_bought", "close_window",
                 "Excellent. One year of free trade. Safe travels.",
+                null, null
+            );
+
+            // ---------------------------------------------------------------
+            // PATH 1b: Ruling clan member — all-towns certificate (1 year)
+            // Only offered when the clan holds 2+ towns.
+            // ---------------------------------------------------------------
+            starter.AddPlayerLine(
+                "trade_cert_alltowns_ask", "hero_main_options", "trade_cert_alltowns_response",
+                "I'd like a certificate covering every town your clan holds.",
+                IsTalkingToRulingClanMemberMultiTown, null
+            );
+            starter.AddDialogLine(
+                "trade_cert_alltowns_response", "trade_cert_alltowns_response", "trade_cert_alltowns_confirm",
+                "{ALL_TOWNS_CERT_PRICE_TEXT}", SetAllTownsCertPriceText, null
+            );
+            starter.AddPlayerLine(
+                "trade_cert_alltowns_yes", "trade_cert_alltowns_confirm", "trade_cert_alltowns_bought",
+                "Yes, I'll take the lot.",
+                CanAffordAllTownsCertificate, OnBuyAllTownsCertificate
+            );
+            starter.AddPlayerLine(
+                "trade_cert_alltowns_no", "trade_cert_alltowns_confirm", "close_window",
+                "Too rich for me. Another time.",
+                null, null
+            );
+            starter.AddDialogLine(
+                "trade_cert_alltowns_bought", "trade_cert_alltowns_bought", "close_window",
+                "A wise investment. My clan's markets are open to you for a year. Safe travels.",
                 null, null
             );
 
@@ -450,6 +480,57 @@ namespace ArtOfTheTrade.Dialogs
             TradeRestrictionBehavior.Current?.TryBuyCertificateWithPrice(town, CalculateCertificatePrice(town, false), 84f);
         }
 
+        // ----- All-towns clan certificate helpers -----
+
+        // Towns owned by the conversation NPC's clan.
+        private System.Collections.Generic.List<Town> GetClanTowns()
+        {
+            var npc = Hero.OneToOneConversationHero;
+            if (npc?.Clan == null) return new System.Collections.Generic.List<Town>();
+            return npc.Clan.Settlements
+                .Where(s => s.IsTown && s.Town != null)
+                .Select(s => s.Town)
+                .ToList();
+        }
+
+        private int CalculateAllTownsCertificatePrice()
+        {
+            int sum = 0;
+            foreach (var town in GetClanTowns())
+                sum += CalculateCertificatePrice(town, false);
+            int discountPct = ArtOfTradeSettings.Instance?.AllTownsCertBulkDiscountPct ?? 30;
+            return (int)(sum * (1f - discountPct / 100f));
+        }
+
+        private bool IsTalkingToRulingClanMemberMultiTown()
+        {
+            if (!IsTalkingToRulingClanMember()) return false;
+            return GetClanTowns().Count >= 2;
+        }
+
+        private bool SetAllTownsCertPriceText()
+        {
+            var towns = GetClanTowns();
+            if (towns.Count < 2) return false;
+            int price = CalculateAllTownsCertificatePrice();
+            var clanName = Hero.OneToOneConversationHero?.Clan?.Name;
+            MBTextManager.SetTextVariable("ALL_TOWNS_CERT_PRICE_TEXT",
+                $"A full year of trade across all {towns.Count} towns {clanName} holds? A generous arrangement — {price} gold for the lot. What do you say?");
+            return true;
+        }
+
+        private bool CanAffordAllTownsCertificate()
+        {
+            return GetClanTowns().Count >= 2 && Hero.MainHero.Gold >= CalculateAllTownsCertificatePrice();
+        }
+
+        private void OnBuyAllTownsCertificate()
+        {
+            var towns = GetClanTowns();
+            if (towns.Count < 2) return;
+            TradeRestrictionBehavior.Current?.TryBuyCertificatesForTowns(towns, CalculateAllTownsCertificatePrice(), 84f);
+        }
+
         private void OnBuyMerchantCertificate()
         {
             var town = Settlement.CurrentSettlement?.Town;
@@ -605,7 +686,7 @@ namespace ArtOfTheTrade.Dialogs
         public static int CalculateTraderPassPrice(Town town)
         {
             float ratio = MBMath.ClampFloat(town.Prosperity / 8000f, 0f, 1f);
-            return (int)(200 + ratio * 300);
+            return (int)(400 + ratio * 600);
         }
     }
 }

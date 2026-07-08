@@ -5,6 +5,7 @@ using TaleWorlds.CampaignSystem.Party;
 using TaleWorlds.Core;
 using TaleWorlds.Library;
 using ArtOfTheTrade.Behaviors;
+using ArtOfTheTrade.Settings;
 
 namespace ArtOfTheTrade.Patches
 {
@@ -46,21 +47,25 @@ namespace ArtOfTheTrade.Patches
                 if (settlement == null) return;
 
                 // Apply trade restriction penalty — towns only
-                if (settlement.IsTown && settlement.Town != null)
+                var s = ArtOfTradeSettings.Instance;
+                if (settlement.IsTown && settlement.Town != null && (s?.EnableTradeRestrictions ?? true))
                 {
                     var behavior = TradeRestrictionBehavior.Current;
                     if (behavior != null && !behavior.CanPlayerTradeAt(settlement.Town))
                     {
+                        float buyMult  = s?.BuyPenaltyMultiplier  ?? 5f;
+                        float sellMult = s?.SellPenaltyMultiplier ?? 0.5f;
+
                         if (isSelling)
-                            __result = (int)(__result * 0.5f);
+                            __result = (int)(__result * sellMult);
                         else
-                            __result = __result * 5;
+                            __result = (int)(__result * buyMult);
 
                         if (!isSelling && _lastWarnedSettlement != settlement.StringId)
                         {
                             _lastWarnedSettlement = settlement.StringId;
                             InformationManager.DisplayMessage(new InformationMessage(
-                                $"No trade deal or certificate for {settlement.Name}. Buy prices are 5x, sell prices halved.", Colors.Red));
+                                $"No trade deal or certificate for {settlement.Name}. Buy prices are {buyMult}×, sell prices {sellMult}×.", Colors.Red));
                         }
                     }
                     else
@@ -70,15 +75,15 @@ namespace ArtOfTheTrade.Patches
                 }
 
                 // Apply haggle modifier — towns and villages
-                // isSelling = true means the merchant/settlement is selling (player is BUYING)
-                // isSelling = false means the merchant/settlement is buying (player is SELLING)
+                // isSelling = true means the PLAYER is selling → apply SellModifier (1 + discount)
+                // isSelling = false means the PLAYER is buying → apply BuyModifier (1 - discount)
                 var haggle = HaggleBehavior.Current;
                 if (haggle != null)
                 {
-                    if (isSelling && haggle.BuyModifier != 1f)
-                        __result = (int)(__result * haggle.BuyModifier);
-                    else if (!isSelling && haggle.SellModifier != 1f)
+                    if (isSelling && haggle.SellModifier != 1f)
                         __result = (int)(__result * haggle.SellModifier);
+                    else if (!isSelling && haggle.BuyModifier != 1f)
+                        __result = (int)(__result * haggle.BuyModifier);
                 }
             }
             catch { }

@@ -4,6 +4,7 @@ using TaleWorlds.CampaignSystem.Settlements;
 using TaleWorlds.Core;
 using TaleWorlds.Library;
 using ArtOfTheTrade.Save;
+using ArtOfTheTrade.Settings;
 
 namespace ArtOfTheTrade.Behaviors
 {
@@ -65,6 +66,24 @@ namespace ArtOfTheTrade.Behaviors
             _currentTier = 0;
         }
 
+        // Builds a unique id for the current conversation merchant.
+        // Hero merchants (e.g. village notables) already have a globally-unique StringId.
+        // Generic town traders (weaponsmith, armorer, goods trader, horse merchant) are
+        // shared CharacterObject templates — the SAME StringId in every town — so we must
+        // qualify them with the current settlement, otherwise a cooldown at one town's
+        // weaponsmith would lock out every weaponsmith everywhere.
+        public static string GetConversationMerchantId()
+        {
+            var hero = Hero.OneToOneConversationHero;
+            if (hero != null) return hero.StringId;
+
+            var character = CharacterObject.OneToOneConversationCharacter;
+            if (character == null) return null;
+
+            string settlementId = Settlement.CurrentSettlement?.StringId ?? "";
+            return settlementId + ":" + character.StringId;
+        }
+
         public bool CanHaggleWith(Hero merchant, string characterId = null)
         {
             string id = characterId ?? merchant?.StringId;
@@ -89,8 +108,7 @@ namespace ArtOfTheTrade.Behaviors
             int skillBonus = (int)((trade + charm) / 2f / 300f * 25f);
 
             // Rep bonus from current conversation target (±10)
-            string merchantId = Hero.OneToOneConversationHero?.StringId
-                ?? CharacterObject.OneToOneConversationCharacter?.StringId;
+            string merchantId = GetConversationMerchantId();
             int repBonus = 0;
             if (merchantId != null && MerchantData_.TryGetValue(merchantId, out var record))
                 repBonus = record.RepScore / 5;
@@ -106,14 +124,16 @@ namespace ArtOfTheTrade.Behaviors
 
             int baseChance = tier switch { 0 => 70, 1 => 45, 2 => 25, _ => 50 };
 
-            // Certificate bonus: +10% if player holds a valid certificate at this town
+            // Certificate bonus
             var town = Settlement.CurrentSettlement?.Town;
+            int certBonus = ArtOfTradeSettings.Instance?.CertificateHaggleBonus ?? 10;
             if (town != null && TradeRestrictionBehavior.Current?.HasValidCertificate(town) == true)
-                baseChance += 10;
+                baseChance += certBonus;
 
-            // Caravan hand bonus: +2% per hired hand (max +10%)
+            // Caravan hand bonus
+            int handBonusPerHand = ArtOfTradeSettings.Instance?.HandHaggleBonusPerHand ?? 2;
             int hands = CaravanHandBehavior.Current?.TotalHands ?? 0;
-            baseChance += MBMath.ClampInt(hands * 2, 0, 10);
+            baseChance += MBMath.ClampInt(hands * handBonusPerHand, 0, 10);
 
             return MBMath.ClampInt(baseChance + skillBonus + repBonus + renownBonus + relationBonus, 5, 95);
         }
@@ -179,7 +199,7 @@ namespace ArtOfTheTrade.Behaviors
                 _sellModifier = 0.75f;
                 var record = GetOrCreate(id);
                 record.RepScore = MBMath.ClampInt(record.RepScore - 5, -50, 50);
-                SetCooldown(id, 3f);
+                SetCooldown(id, ArtOfTradeSettings.Instance?.HaggleFailureCooldown ?? 3f);
                 _lastOutcome = HaggleOutcome.Failure;
                 InformationManager.DisplayMessage(new InformationMessage(
                     $"Haggle failed! Prices penalized for 3 days. (Rep: {record.RepScore}/50)", Colors.Red));
@@ -234,7 +254,7 @@ namespace ArtOfTheTrade.Behaviors
                 _sellModifier = 0.65f;
                 var record = GetOrCreate(_currentMerchantId);
                 record.RepScore = MBMath.ClampInt(record.RepScore - 10, -50, 50);
-                SetCooldown(_currentMerchantId, 7f);
+                SetCooldown(_currentMerchantId, ArtOfTradeSettings.Instance?.HaggleCollapseCooldown ?? 7f);
                 _lastOutcome = HaggleOutcome.Failure;
                 InformationManager.DisplayMessage(new InformationMessage(
                     $"The deal collapsed! Locked out for 7 days. (Rep: {record.RepScore}/50)", Colors.Red));
@@ -250,6 +270,8 @@ namespace ArtOfTheTrade.Behaviors
                 SetCooldown(_currentMerchantId, 1f);
             ResetModifier();
         }
+
+        public static bool IsEnabled => ArtOfTradeSettings.Instance?.EnableHaggle ?? true;
 
         public static HaggleBehavior Current =>
             Campaign.Current?.GetCampaignBehavior<HaggleBehavior>();

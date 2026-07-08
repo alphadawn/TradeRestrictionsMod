@@ -8,6 +8,7 @@ using TaleWorlds.Core;
 using TaleWorlds.Library;
 using ArtOfTheTrade.Models;
 using ArtOfTheTrade.Save;
+using ArtOfTheTrade.Settings;
 
 namespace ArtOfTheTrade.Behaviors
 {
@@ -40,28 +41,29 @@ namespace ArtOfTheTrade.Behaviors
         public bool CanPlayerStashAt(Settlement settlement) =>
             settlement != null && settlement.IsTown;
 
-        // Free access: player owns the town or has a workshop there
+        // Free access: player owns the town or has a workshop there (each condition toggleable)
         public bool IsFreeStashAt(Settlement settlement)
         {
             if (settlement == null) return false;
+            var settings = ArtOfTradeSettings.Instance;
             var player = Hero.MainHero;
-            if (settlement.IsCastle && settlement.OwnerClan == player.Clan) return true;
-            if (settlement.IsTown && settlement.Town.Workshops.Any(w => w.Owner == player)) return true;
+            if ((settings?.FreeStashIfOwnTown ?? true) && settlement.IsCastle && settlement.OwnerClan == player.Clan) return true;
+            if ((settings?.FreeStashIfWorkshop ?? true) && settlement.IsTown && settlement.Town.Workshops.Any(w => w.Owner == player)) return true;
             return false;
         }
 
-        // Returns true and charges 50g if needed; returns false if player can't afford
+        // Returns true and charges fee if needed; returns false if player can't afford
         public bool TryChargeAccessFee(Settlement settlement)
         {
             if (IsFreeStashAt(settlement)) return true;
-            const int Fee = 50;
-            if (Hero.MainHero.Gold < Fee)
+            int fee = ArtOfTradeSettings.Instance?.StashAccessFee ?? 50;
+            if (Hero.MainHero.Gold < fee)
             {
                 InformationManager.DisplayMessage(new InformationMessage(
-                    $"You need {Fee} gold to access your stash here.", Colors.Red));
+                    $"You need {fee} gold to access your stash here.", Colors.Red));
                 return false;
             }
-            GiveGoldAction.ApplyBetweenCharacters(Hero.MainHero, null, Fee, true);
+            GiveGoldAction.ApplyBetweenCharacters(Hero.MainHero, null, fee, true);
             return true;
         }
 
@@ -178,6 +180,8 @@ namespace ArtOfTheTrade.Behaviors
             if (!settlement.IsTown) return false;
             return settlement.Town.Workshops.Any(w => w.Owner == Hero.MainHero);
         }
+
+        public static bool IsEnabled => ArtOfTradeSettings.Instance?.EnableStash ?? true;
 
         public static StashBehavior Current =>
             Campaign.Current.GetCampaignBehavior<StashBehavior>();
